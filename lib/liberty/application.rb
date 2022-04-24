@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'adapters/request'
-require_relative 'adapters/response'
+require_relative "adapters/request"
+require_relative "adapters/response"
 
 module Liberty
   class Application

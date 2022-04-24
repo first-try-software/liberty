@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require_relative 'parsers/factory'
+require_relative "parsers/factory"
 
 module Liberty
   module Adapters
     class Request
-      PARSED_BODY = 'parsed_body'
-      ROUTER_PARAMS = 'router.params'
+      PARSED_BODY = "parsed_body"
+      ROUTER_PARAMS = "router.params"
 
       attr_reader :env
 
@@ -22,10 +22,14 @@ module Liberty
       end
 
       def params
-        @params ||= env ? form_params.merge!(body_params).merge!(url_params) : {}
+        @params ||= env ? all_params : {}
       end
 
       private
+
+      def all_params
+        form_params.merge!(body_params).merge!(url_params)
+      end
 
       def accept_media_types
         @accept_media_types ||= rack_request.accept_media_types
@@ -48,7 +52,9 @@ module Liberty
       end
 
       def body
-        rack_request.body.read.tap { rack_request.body.rewind }
+        read_body = rack_request.body.read
+        rack_request.body.rewind
+        read_body
       end
 
       def media_type

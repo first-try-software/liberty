@@ -3,12 +3,12 @@
 module Liberty
   module Adapters
     class Response
-      CONTENT_TYPE = 'Content-Type'
-      CONTENT_LENGTH = 'Content-Length'
-      MIME_TYPE_JSON = 'application/json'
-      MIME_TYPE_HTML = 'text/html'
-      MIME_TYPE_TEXT = 'text/plain'
-      EMPTY_CONTENT = ''
+      CONTENT_TYPE = "Content-Type"
+      CONTENT_LENGTH = "Content-Length"
+      MIME_TYPE_JSON = "application/json"
+      MIME_TYPE_HTML = "text/html"
+      MIME_TYPE_TEXT = "text/plain"
+      EMPTY_CONTENT = ""
 
       attr_reader :endpoint
 
@@ -27,8 +27,8 @@ module Liberty
       end
 
       def headers
-        headers = { CONTENT_LENGTH => content_length }
-        headers.merge!(CONTENT_TYPE => content_type) if content_type
+        headers = {CONTENT_LENGTH => content_length}
+        headers[CONTENT_TYPE] = content_type if content_type
         headers.merge!(response_headers)
         headers
       end
@@ -52,29 +52,33 @@ module Liberty
       end
 
       def json
-        return unless endpoint.json
+        return unless response_json
         return stringified_json if valid_json?
 
-        endpoint.json.to_json
+        response_json.to_json
+      end
+
+      def response_json
+        @response_json ||= endpoint.json
       end
 
       def html
-        endpoint.html
+        @html ||= endpoint.html
       end
 
       def text
-        endpoint.text
+        @text ||= endpoint.text
       end
 
       def body
-        endpoint.body
+        @body ||= endpoint.body
       end
 
       def valid_json?
         JSON.parse(stringified_json)
-        return true
-      rescue JSON::ParserError => e
-        return false
+        true
+      rescue JSON::ParserError
+        false
       end
 
       def stringified_json

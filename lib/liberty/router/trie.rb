@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require_relative 'node'
+require_relative "node"
 
 module Liberty
   class Router
     class Trie
-      PATH_SEPARATOR = '/'
+      PATH_SEPARATOR = "/"
 
       def initialize
         @root = Node.new

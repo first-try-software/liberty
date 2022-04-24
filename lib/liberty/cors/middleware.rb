@@ -23,7 +23,7 @@ module Liberty
       end
 
       def access_control_header
-        Liberty::CORS.headers.slice('Access-Control-Allow-Origin')
+        Liberty::CORS.headers.slice("Access-Control-Allow-Origin")
       end
 
       def cors_configured?
@@ -31,7 +31,7 @@ module Liberty
       end
 
       def cors_request?(env)
-        env['REQUEST_METHOD'] == 'OPTIONS'
+        env["REQUEST_METHOD"] == "OPTIONS"
       end
 
       def cors_response
@@ -40,8 +40,8 @@ module Liberty
 
       def default_headers
         {
-          'Content-Type' => 'text/plain',
-          'Content-Length' => '0'
+          "Content-Type" => "text/plain",
+          "Content-Length" => "0"
         }
       end
     end

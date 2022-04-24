@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'cors/middleware'
+require_relative "cors/middleware"
 
 module Liberty
   class CORS

@@ -3,8 +3,8 @@
 module Liberty
   class Router
     class Node
-      MUSTERMANN_VERSION = '5.0'
-      DYNAMIC_PREFIX = /:/.freeze
+      MUSTERMANN_VERSION = "5.0"
+      DYNAMIC_PREFIX = /:/
 
       attr_reader :endpoint
 
@@ -26,7 +26,7 @@ module Liberty
         @endpoint = endpoint
       end
 
-      def print(verb, routes, prefix = '')
+      def print(verb, routes, prefix = "")
         print_segments(@static, routes, verb, prefix)
         print_segments(@dynamic, routes, verb, prefix)
       end
@@ -78,7 +78,7 @@ module Liberty
 
       def print_segments(segments, routes, verb, prefix)
         segments&.each do |segment, node|
-          routes << { verb: verb, path: "#{prefix}/#{segment}", endpoint: node.endpoint } if node.endpoint
+          routes << {verb: verb, path: "#{prefix}/#{segment}", endpoint: node.endpoint} if node.endpoint
           node.print(verb, routes, "#{prefix}/#{segment}")
         end
       end

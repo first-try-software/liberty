@@ -1,21 +1,21 @@
 # frozen_string_literal: true
 
-require_relative 'router/trie'
-require_relative 'router/printer'
+require_relative "router/trie"
+require_relative "router/printer"
 
 module Liberty
   class Router
-    GET = 'GET'
-    HEAD = 'HEAD'
-    POST = 'POST'
-    PUT = 'PUT'
-    PATCH = 'PATCH'
-    DELETE = 'DELETE'
-    REQUEST_METHOD = 'REQUEST_METHOD'
-    PATH_INFO = 'PATH_INFO'
-    ROUTER_PARAMS = 'router.params'
-    DYNAMIC_PREFIX = /:/.freeze
-    NOT_FOUND_RESPONSE = [404, { 'Content-Length' => '9' }, ['Not Found']].freeze
+    GET = "GET"
+    HEAD = "HEAD"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
+    REQUEST_METHOD = "REQUEST_METHOD"
+    PATH_INFO = "PATH_INFO"
+    ROUTER_PARAMS = "router.params"
+    DYNAMIC_PREFIX = /:/
+    NOT_FOUND_RESPONSE = [404, {"Content-Length" => "9"}, ["Not Found"]].freeze
 
     def initialize
       @apps = {}
@@ -49,7 +49,7 @@ module Liberty
       endpoint ? endpoint.call(env) : NOT_FOUND_RESPONSE
     end
 
-    def print(stdout = STDOUT)
+    def print(stdout = $stdout)
       Printer.new(@static, @dynamic, stdout).print
     end
 

@@ -26,10 +26,19 @@ module Liberty
       DEFAULT_STATUS
     end
 
-    def headers; end
-    def json; end
-    def html; end
-    def text; end
-    def body; end
+    def headers
+    end
+
+    def json
+    end
+
+    def html
+    end
+
+    def text
+    end
+
+    def body
+    end
   end
 end

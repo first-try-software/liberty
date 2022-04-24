@@ -3,11 +3,11 @@
 module Liberty
   class Router
     class Printer
-      VERBS = %w(GET HEAD POST PUT PATCH DELETE).freeze
+      VERBS = %w[GET HEAD POST PUT PATCH DELETE].freeze
 
       attr_reader :static, :dynamic, :memo, :stdout
 
-      def initialize(static, dynamic, stdout = STDOUT)
+      def initialize(static, dynamic, stdout = $stdout)
         @static, @dynamic = static, dynamic
         @stdout = stdout
         @memo = []
@@ -24,7 +24,7 @@ module Liberty
       def gather_static_routes
         static.each do |verb, routes|
           routes.each do |path, endpoint|
-            memo << { verb: verb, path: path, endpoint: endpoint }
+            memo << {verb: verb, path: path, endpoint: endpoint}
           end
         end
       end

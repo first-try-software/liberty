@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 if require "simplecov"
   SimpleCov.start do
     add_filter "/spec/"

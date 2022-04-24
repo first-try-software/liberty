@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'json'
-require_relative 'null'
+require_relative "json"
+require_relative "null"
 
 module Liberty
   module Adapters
