@@ -2,6 +2,8 @@
 
 # Liberty
 
+[![Ruby](https://github.com/first-try-software/liberty/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/first-try-software/liberty/actions/workflows/main.yml)
+
 Liberty is the state of being free from oppressive restrictions imposed by authority.
 
 Liberty is also a minimalist web-framework for Ruby that seeks to get out of your way
