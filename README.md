@@ -2,7 +2,7 @@
 
 # Liberty
 
-[![Ruby](https://github.com/first-try-software/liberty/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/first-try-software/liberty/actions/workflows/main.yml)
+[![Gem Version](https://badge.fury.io/rb/liberty.svg)](https://badge.fury.io/rb/liberty) [![Ruby](https://github.com/first-try-software/liberty/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/first-try-software/liberty/actions/workflows/main.yml) [![Maintainability](https://api.codeclimate.com/v1/badges/02bb162371c4fcfe10eb/maintainability)](https://codeclimate.com/github/first-try-software/liberty/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/02bb162371c4fcfe10eb/test_coverage)](https://codeclimate.com/github/first-try-software/liberty/test_coverage)
 
 Liberty is the state of being free from oppressive restrictions imposed by authority.
 
