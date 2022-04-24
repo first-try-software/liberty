@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Liberty do
   describe "#rack_app" do
     subject(:rack_app) { Liberty.rack_app }

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "liberty/router"
 require "rack/mock"
 require "json"

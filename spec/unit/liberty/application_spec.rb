@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Liberty::Application do
   subject(:adapter) { described_class.new(endpoint_class: endpoint_class) }
 

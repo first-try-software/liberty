@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Liberty::Adapters::Parsers::JSON do
   subject(:parser) { described_class }
 

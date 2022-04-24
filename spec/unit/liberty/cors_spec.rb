@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Liberty::CORS do
   describe ".headers=" do
     context "when the incoming headers are NOT in a hash" do

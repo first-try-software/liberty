@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Liberty::Endpoint do
   let(:endpoint_class) { Class.new(described_class) }
 

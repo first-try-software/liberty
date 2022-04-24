@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Liberty::Adapters::Request do
   subject(:request) { described_class.new(env) }
 

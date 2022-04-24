@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Liberty::Router::Printer do
   describe "#print" do
     subject(:print) { router.print(stdout) }

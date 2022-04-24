@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Liberty::Adapters::Response do
   describe "#to_rack_response" do
     subject(:to_rack_response) { described_class.new(endpoint).to_rack_response }
