@@ -4,9 +4,19 @@ require_relative "cors/middleware"
 
 module Liberty
   class CORS
+    ACCESS_CONTROL_HEADER = "Access-Control-Allow-Origin"
+
     class << self
       def config
         yield(self)
+      end
+
+      def configured?
+        !@headers.empty?
+      end
+
+      def access_control_header
+        headers.slice(ACCESS_CONTROL_HEADER)
       end
 
       def headers

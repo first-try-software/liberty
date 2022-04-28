@@ -23,11 +23,11 @@ module Liberty
       end
 
       def access_control_header
-        Liberty::CORS.headers.slice("Access-Control-Allow-Origin")
+        Liberty::CORS.access_control_header
       end
 
       def cors_configured?
-        !Liberty::CORS.headers.empty?
+        Liberty::CORS.configured?
       end
 
       def cors_request?(env)

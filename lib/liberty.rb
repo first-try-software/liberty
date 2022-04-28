@@ -14,9 +14,13 @@ require_relative "liberty/cors"
 
 module Liberty
   def self.rack_app
-    @server ||= Rack::Builder.new(Liberty.router) do
-      use Liberty::CORS::Middleware
-      use Rack::AbstractFormat
+    middleware
+  end
+
+  def self.middleware
+    @middleware ||= Rack::Builder.new(Liberty.router) do
+      use(Liberty::CORS::Middleware)
+      use(Rack::AbstractFormat)
     end
   end
 
