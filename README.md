@@ -2,25 +2,40 @@
 
 # Liberty
 
-[![Gem Version](https://badge.fury.io/rb/liberty.svg)](https://badge.fury.io/rb/liberty) [![Ruby](https://github.com/first-try-software/liberty/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/first-try-software/liberty/actions/workflows/main.yml) [![Maintainability](https://api.codeclimate.com/v1/badges/02bb162371c4fcfe10eb/maintainability)](https://codeclimate.com/github/first-try-software/liberty/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/02bb162371c4fcfe10eb/test_coverage)](https://codeclimate.com/github/first-try-software/liberty/test_coverage)
+[![Gem Version](https://badge.fury.io/rb/liberty.svg)](https://badge.fury.io/rb/liberty)
+[![Ruby](https://github.com/first-try-software/liberty/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/first-try-software/liberty/actions/workflows/main.yml)
+[![Maintainability](https://api.codeclimate.com/v1/badges/02bb162371c4fcfe10eb/maintainability)](https://codeclimate.com/github/first-try-software/liberty/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/02bb162371c4fcfe10eb/test_coverage)](https://codeclimate.com/github/first-try-software/liberty/test_coverage)
 
 Liberty is the state of being free from oppressive restrictions imposed by authority.
 
-Liberty is also a minimalist web-framework for Ruby that seeks to get out of your way
-so that you can focus on your most valuable asset: your business logic. It is structured
-in a way that encourages you to separate your business logic from the framework code.
-It provides the web adapter for a Hexagonal Architecture and it works well with Domain
-Driven Design.
+Liberty is also a minimalist web-framework for Ruby that seeks to get out of your way so that you can focus on your most valuable asset — the part of your application that is uniquely yours — your business logic.
 
-## Installation
+Liberty is structured in a way that encourages you to separate your business logic from the underlying framework code. It provides a web adapter for a Hexagonal Architecture, and it works very well with Domain Driven Design.
 
-Install the gem and add to the application's Gemfile by executing:
+Though Liberty does not shackle you to convention, we (the authors) do consider there to be some best practices:
 
-    $ bundle add liberty
+First, we believe THE most important aspect of your software is your domain logic. As such, we believe you should start there, and spend the vast majority of your time working on that code. Tests can act as the front-end to drive your domain logic, and mock repositories can act as your data store. This allows you to develop your business logic in isolation.
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+Second, we believe your application should look uniquely yours inside an editor. Accounting programs should not look like social networks. And, neither should look like a game. As such, we encourage you to put your business logic in an obvious place that is separate and apart from the framework concepts. (We typically use a `domain` folder in which we have folders for each Bounded Context.)
 
-    $ gem install liberty
+Third, we believe the code that ties your application to physical infrastructure, like the web or a database or a messaging system, should be stored somewhere else. (We typically use an `app` folder for this code, with folders for `endpoints`, concrete `repositories`, and other bits of glue code.)
+
+A small application for managing to-do lists might look like this:
+
+```
+todo/
+  app/
+    endpoints/
+    repositories/
+  domain/
+    todos/
+    users/
+```
+
+The `/app` folder contains the code that glues the domain logic to the outside world. While the `domain` folder contains the DDD Bounded Contexts within the application.
+
+That said, Liberty does not use convention. It relies on classes declaratively registering themselves at load time to handle a specific use case or web request. The router dispatches requests to the appropriate endpoint (in lightning speed, we might add). And, a dispatcher calls the appropriate use case when needed.
 
 ## Usage
 
@@ -69,6 +84,16 @@ end
 
 If you configure your CORS headers before you launch your application, `Endpoints` will
 automatically respond with the right headers.
+
+## Installation
+
+Install the gem and add to the application's Gemfile by executing:
+
+    $ bundle add liberty
+
+If bundler is not being used to manage dependencies, install the gem by executing:
+
+    $ gem install liberty
 
 ## Development
 
