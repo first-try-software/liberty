@@ -12,7 +12,7 @@ module Liberty
       end
 
       def configured?
-        !@headers.empty?
+        !@headers.nil? && !@headers.empty?
       end
 
       def access_control_header
