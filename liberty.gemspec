@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description = "Liberty is the state of being free from oppressive restrictions imposed by authority."
   spec.homepage = "https://github.com/first-try-software/liberty"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.required_ruby_version = ">= 3.3.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
@@ -28,16 +28,9 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "json", "~> 2.3"
-  spec.add_dependency "mustermann", "~> 1.1"
-  spec.add_dependency "mustermann-contrib", "~> 1.1"
-  spec.add_dependency "rack", "~> 2.2"
+  spec.add_dependency "mustermann", "~> 4.0"
+  spec.add_dependency "mustermann-contrib", "~> 4.0"
+  spec.add_dependency "rack", "~> 3.1"
   spec.add_dependency "rack-abstract-format", "~> 0.9.9"
   spec.add_dependency "rack-accept-media-types", "~> 0.9"
-
-  spec.add_development_dependency "bundler", "~> 2.0"
-  spec.add_development_dependency "rack", "~> 2.2"
-  spec.add_development_dependency "rake", "~> 12.0"
-  spec.add_development_dependency "rspec", "~> 3.0"
-  spec.add_development_dependency "rspec_junit_formatter", "~> 0.4"
-  spec.add_development_dependency "simplecov", "~> 0.17.1"
 end

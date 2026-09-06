@@ -3,8 +3,8 @@
 module Liberty
   module Adapters
     class Response
-      CONTENT_TYPE = "Content-Type"
-      CONTENT_LENGTH = "Content-Length"
+      CONTENT_TYPE = "content-type"
+      CONTENT_LENGTH = "content-length"
       MIME_TYPE_JSON = "application/json"
       MIME_TYPE_HTML = "text/html"
       MIME_TYPE_TEXT = "text/plain"
@@ -40,7 +40,7 @@ module Liberty
       def content_type
         return MIME_TYPE_JSON if json
         return MIME_TYPE_HTML if html
-        return MIME_TYPE_TEXT if text
+        MIME_TYPE_TEXT if text
       end
 
       def content_length

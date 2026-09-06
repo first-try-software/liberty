@@ -21,7 +21,7 @@ RSpec.describe Liberty do
         end
 
         def headers
-          {"X-Custom-Header" => "custom value"}
+          {"x-custom-header" => "custom value"}
         end
       end
     end

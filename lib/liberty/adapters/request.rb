@@ -52,8 +52,11 @@ module Liberty
       end
 
       def body
-        read_body = rack_request.body.read
-        rack_request.body.rewind
+        input = rack_request.body
+        return nil unless input
+
+        read_body = input.read
+        input.rewind if input.respond_to?(:rewind)
         read_body
       end
 

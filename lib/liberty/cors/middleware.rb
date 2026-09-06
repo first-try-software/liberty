@@ -40,8 +40,8 @@ module Liberty
 
       def default_headers
         {
-          "Content-Type" => "text/plain",
-          "Content-Length" => "0"
+          "content-type" => "text/plain",
+          "content-length" => "0"
         }
       end
     end

@@ -10,7 +10,7 @@ RSpec.describe Liberty::Router do
   let(:app) { Rack::MockRequest.new(router) }
   let(:endpoint) { ->(env) { [status, headers, [env["router.params"].to_json]] } }
   let(:status) { 200 }
-  let(:headers) { {"Content-Type" => "txt/plain"} }
+  let(:headers) { {"content-type" => "txt/plain"} }
 
   shared_examples "a registered route" do |options|
     subject(:register_route) { router.public_send(options[:method], registered_path, to: endpoint) }

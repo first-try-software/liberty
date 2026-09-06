@@ -15,7 +15,7 @@ module Liberty
     PATH_INFO = "PATH_INFO"
     ROUTER_PARAMS = "router.params"
     DYNAMIC_PREFIX = /:/
-    NOT_FOUND_RESPONSE = [404, {"Content-Length" => "9"}, ["Not Found"]].freeze
+    NOT_FOUND_RESPONSE = [404, {"content-length" => "9"}, ["Not Found"]].freeze
 
     def initialize
       @apps = {}

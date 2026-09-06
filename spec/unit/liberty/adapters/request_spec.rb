@@ -57,7 +57,7 @@ RSpec.describe Liberty::Adapters::Request do
     context "when the env is NOT nil" do
       let(:env) { {"router.params" => url_params} }
       let(:rack_request) { instance_double(Rack::Request, body: request_body, media_type: media_type, params: form_params) }
-      let(:request_body) { instance_double("request_body", read: body_params.to_json, rewind: true) }
+      let(:request_body) { instance_double("request_body", read: body_params.to_json) }
       let(:media_type) { "application/json" }
       let(:form_params) { {"form_param" => "form_value"} }
       let(:body_params) { {"body_param" => "body_value"} }
@@ -83,6 +83,34 @@ RSpec.describe Liberty::Adapters::Request do
 
       it "parses params out of the env query string" do
         expect(params).to include(url_param: "url_value")
+      end
+
+      context "when the body is rewindable" do
+        let(:request_body) { instance_double(StringIO, read: body_params.to_json, rewind: 0) }
+
+        it "rewinds the body after reading it" do
+          params
+
+          expect(request_body).to have_received(:rewind)
+        end
+      end
+
+      context "when the body is NOT rewindable" do
+        it "does not attempt to rewind the body" do
+          expect { params }.not_to raise_error
+        end
+      end
+
+      context "when there is no body" do
+        let(:request_body) { nil }
+
+        it "does not include body params" do
+          expect(params).not_to include(:body_param)
+        end
+
+        it "still includes form and query string params" do
+          expect(params).to eq(form_param: "form_value", url_param: "url_value")
+        end
       end
     end
   end

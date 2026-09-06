@@ -23,7 +23,7 @@ RSpec.describe Liberty::Adapters::Response do
         it "adds an application/json content type to headers" do
           expect(to_rack_response).to match_array([
             anything,
-            a_hash_including("Content-Type" => "application/json"),
+            a_hash_including("content-type" => "application/json"),
             anything
           ])
         end
@@ -35,7 +35,7 @@ RSpec.describe Liberty::Adapters::Response do
         it "adds an text/html content type to headers" do
           expect(to_rack_response).to match_array([
             anything,
-            a_hash_including("Content-Type" => "text/html"),
+            a_hash_including("content-type" => "text/html"),
             anything
           ])
         end
@@ -47,7 +47,7 @@ RSpec.describe Liberty::Adapters::Response do
         it "adds an text/plain content type to headers" do
           expect(to_rack_response).to match_array([
             anything,
-            a_hash_including("Content-Type" => "text/plain"),
+            a_hash_including("content-type" => "text/plain"),
             anything
           ])
         end
@@ -59,7 +59,7 @@ RSpec.describe Liberty::Adapters::Response do
         it "does not add a content type header" do
           expect(to_rack_response).to match_array([
             anything,
-            hash_excluding({"Content-Type" => anything}),
+            hash_excluding({"content-type" => anything}),
             anything
           ])
         end
@@ -92,14 +92,14 @@ RSpec.describe Liberty::Adapters::Response do
         it "adds a content type header" do
           expect(to_rack_response).to match_array([
             anything,
-            a_kind_of(Hash).and(have_key("Content-Type")),
+            a_kind_of(Hash).and(have_key("content-type")),
             anything
           ])
         end
       end
 
       context "and the headers include content type" do
-        let(:headers) { {"Content-Type" => "image/png"} }
+        let(:headers) { {"content-type" => "image/png"} }
 
         before do
           allow(endpoint).to receive(:headers).and_return(headers)
@@ -109,7 +109,7 @@ RSpec.describe Liberty::Adapters::Response do
         it "honors the user-provided content type" do
           expect(to_rack_response).to match_array([
             anything,
-            a_hash_including("Content-Type" => "image/png"),
+            a_hash_including("content-type" => "image/png"),
             anything
           ])
         end
@@ -126,14 +126,14 @@ RSpec.describe Liberty::Adapters::Response do
         it "adds a content length header" do
           expect(to_rack_response).to match_array([
             anything,
-            a_hash_including("Content-Length" => "9"),
+            a_hash_including("content-length" => "9"),
             anything
           ])
         end
       end
 
       context "and the headers include content length" do
-        let(:headers) { {"Content-Length" => "42"} }
+        let(:headers) { {"content-length" => "42"} }
 
         before do
           allow(endpoint).to receive(:headers).and_return(headers)
@@ -143,7 +143,7 @@ RSpec.describe Liberty::Adapters::Response do
         it "honors the user-provided content length" do
           expect(to_rack_response).to match_array([
             anything,
-            a_hash_including("Content-Length" => "42"),
+            a_hash_including("content-length" => "42"),
             anything
           ])
         end
