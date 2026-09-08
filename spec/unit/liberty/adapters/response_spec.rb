@@ -5,6 +5,36 @@ RSpec.describe Liberty::Adapters::Response do
     subject(:to_rack_response) { described_class.new(endpoint).to_rack_response }
 
     let(:endpoint) { Class.new(Liberty::Endpoint).new }
+    let(:request) { instance_double(Liberty::Adapters::Request, head?: false) }
+
+    before { endpoint.inject(request: request) }
+
+    context "when the request is a HEAD request" do
+      let(:request) { instance_double(Liberty::Adapters::Request, head?: true) }
+      let(:json) { {key: "value"}.to_json }
+
+      before { allow(endpoint).to receive(:json).and_return(json) }
+
+      it "returns an empty body" do
+        expect(to_rack_response).to match_array([anything, anything, []])
+      end
+
+      it "still reports the content length of the content" do
+        expect(to_rack_response).to match_array([
+          anything,
+          a_hash_including("content-length" => json.bytesize.to_s),
+          anything
+        ])
+      end
+
+      it "still reports the content type of the content" do
+        expect(to_rack_response).to match_array([
+          anything,
+          a_hash_including("content-type" => "application/json"),
+          anything
+        ])
+      end
+    end
 
     context "when endpoint returns a status" do
       let(:status) { 418 }

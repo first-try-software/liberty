@@ -43,6 +43,34 @@ RSpec.describe Liberty::Adapters::Request do
     end
   end
 
+  describe "#head?" do
+    subject(:head?) { request.head? }
+
+    context "when the env is nil" do
+      let(:env) { nil }
+
+      it "returns false" do
+        expect(head?).to be(false)
+      end
+    end
+
+    context "when the request method is HEAD" do
+      let(:env) { {"REQUEST_METHOD" => "HEAD"} }
+
+      it "returns true" do
+        expect(head?).to be(true)
+      end
+    end
+
+    context "when the request method is NOT HEAD" do
+      let(:env) { {"REQUEST_METHOD" => "GET"} }
+
+      it "returns false" do
+        expect(head?).to be(false)
+      end
+    end
+  end
+
   describe "#params" do
     subject(:params) { request.params }
 

@@ -15,7 +15,9 @@ module Liberty
     PATH_INFO = "PATH_INFO"
     ROUTER_PARAMS = "router.params"
     DYNAMIC_PREFIX = /:/
-    NOT_FOUND_RESPONSE = [404, {"content-length" => "9"}, ["Not Found"]].freeze
+    NOT_FOUND_STATUS = 404
+    NOT_FOUND_BODY = "Not Found"
+    CONTENT_LENGTH = "content-length"
 
     def initialize
       @apps = {}
@@ -46,7 +48,7 @@ module Liberty
 
     def call(env)
       endpoint = find_endpoint(env[REQUEST_METHOD], env[PATH_INFO]) { |params| env[ROUTER_PARAMS] = params }
-      endpoint ? endpoint.call(env) : NOT_FOUND_RESPONSE
+      endpoint ? endpoint.call(env) : not_found_response(env)
     end
 
     def print(stdout = $stdout)
@@ -54,6 +56,18 @@ module Liberty
     end
 
     private
+
+    def not_found_response(env)
+      [NOT_FOUND_STATUS, not_found_headers, not_found_body(env)]
+    end
+
+    def not_found_headers
+      {CONTENT_LENGTH => NOT_FOUND_BODY.bytesize.to_s}
+    end
+
+    def not_found_body(env)
+      (env[REQUEST_METHOD] == HEAD) ? [] : [NOT_FOUND_BODY]
+    end
 
     def register_route(verb, path, to)
       dynamic?(path) ? register_dynamic_route(verb, path, to) : register_static_route(verb, path, to)

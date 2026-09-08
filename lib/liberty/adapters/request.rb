@@ -25,6 +25,10 @@ module Liberty
         @params ||= env ? all_params : {}
       end
 
+      def head?
+        env ? rack_request.head? : false
+      end
+
       private
 
       def all_params

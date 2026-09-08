@@ -17,13 +17,21 @@ module Liberty
       end
 
       def to_rack_response
-        [status, headers, [content]]
+        [status, headers, rack_body]
       end
 
       private
 
       def status
         endpoint.status
+      end
+
+      def rack_body
+        head? ? [] : [content]
+      end
+
+      def head?
+        endpoint.request.head?
       end
 
       def headers

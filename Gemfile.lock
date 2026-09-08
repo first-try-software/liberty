@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    liberty (0.3.0)
+    liberty (0.3.1)
       json (~> 2.3)
       mustermann (~> 4.0)
       mustermann-contrib (~> 4.0)

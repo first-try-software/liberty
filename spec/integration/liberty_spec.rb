@@ -33,6 +33,49 @@ RSpec.describe Liberty do
     end
   end
 
+  context "HEAD request" do
+    let(:app) { Rack::Lint.new(Liberty.rack_app) }
+    let(:uri) { "/freedom?value=1" }
+    let(:response) { request.head(uri, options) }
+    let(:options) { {"HTTP_ACCEPT" => "application/json"} }
+    let(:get_body) { {message: "Freedom!", value: 1}.to_json }
+    let!(:endpoint_class) do
+      Class.new(Liberty::Endpoint) do
+        responds_to :get, "/freedom"
+
+        def status
+          201
+        end
+
+        def json
+          {message: "Freedom!", value: params[:value].to_i}
+        end
+
+        def headers
+          {"x-custom-header" => "custom value"}
+        end
+      end
+    end
+
+    it "responds with the GET status and headers, but an empty body" do
+      expect(response.body).to eq("")
+      expect(response.status).to eq(201)
+      expect(response.headers["content-length"]).to eq(get_body.bytesize.to_s)
+      expect(response.headers["content-type"]).to eq("application/json")
+      expect(response.headers["x-custom-header"]).to eq("custom value")
+    end
+
+    context "when there is no route for the requested url" do
+      let(:uri) { "/nowhere" }
+
+      it "responds with 404 and an empty body" do
+        expect(response.status).to eq(404)
+        expect(response.body).to eq("")
+        expect(response.headers["content-length"]).to eq("9")
+      end
+    end
+  end
+
   context "when CORS is configured" do
     before do
       Liberty::CORS.config do |config|

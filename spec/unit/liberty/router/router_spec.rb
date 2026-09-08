@@ -118,6 +118,38 @@ RSpec.describe Liberty::Router do
 
   describe "#get" do
     it_behaves_like "a registered route", method: :get
+
+    context "when the request is a HEAD request" do
+      let(:response) { app.head(request_url) }
+
+      before do
+        router.get("/static", to: endpoint)
+      end
+
+      context "and the url matches a registered GET route" do
+        let(:request_url) { "/static" }
+
+        it "calls the endpoint" do
+          expect(response.status).to eq(200)
+        end
+      end
+
+      context "and there is no route for the requested url" do
+        let(:request_url) { "/not_registered" }
+
+        it "responds with 404" do
+          expect(response.status).to eq(404)
+        end
+
+        it "responds with an empty body" do
+          expect(response.body).to eq("")
+        end
+
+        it "reports the content length of the GET body" do
+          expect(response.headers["content-length"]).to eq("9")
+        end
+      end
+    end
   end
 
   describe "#post" do

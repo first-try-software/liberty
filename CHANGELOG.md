@@ -1,3 +1,15 @@
+## [0.3.1] - 2026-09-07
+
+### Fixed
+
+- Responds to `HEAD` requests with an empty body, as the Rack specification requires. Status and headers, including `content-length`, still describe what the matching `GET` would return.
+- Responds to `HEAD` requests for unknown routes with a 404 and an empty body.
+- Builds the 404 response per request instead of reusing a frozen constant, which Rack::Lint rejects.
+
+### Changed
+
+- Adds `qlty` and `flog` tasks to the default Rake task, alongside `spec` and `standard`.
+
 ## [0.3.0] - 2026-09-06
 
 ### Breaking changes
