@@ -68,6 +68,72 @@ RSpec.describe Liberty::Endpoint do
     end
   end
 
+  describe "#authenticated?" do
+    subject(:authenticated?) { endpoint.authenticated? }
+
+    let(:endpoint) { endpoint_class.new }
+
+    context "when the endpoint class implements #authenticated?" do
+      let(:endpoint_class) { Class.new(described_class) { def authenticated? = true } }
+
+      it "returns the result" do
+        expect(authenticated?).to be(true)
+      end
+    end
+
+    context "when the endpoint class does NOT implement #authenticated?" do
+      let(:endpoint_class) { Class.new(described_class) }
+
+      it "returns false" do
+        expect(authenticated?).to be(false)
+      end
+    end
+  end
+
+  describe "#www_authenticate_header" do
+    subject(:www_authenticate_header) { endpoint.www_authenticate_header }
+
+    let(:endpoint) { endpoint_class.new }
+
+    context "when the endpoint class implements #www_authenticate_header" do
+      let(:endpoint_class) { Class.new(described_class) { def www_authenticate_header = "Bearer" } }
+
+      it "returns the challenge" do
+        expect(www_authenticate_header).to eq("Bearer")
+      end
+    end
+
+    context "when the endpoint class does NOT implement #www_authenticate_header" do
+      let(:endpoint_class) { Class.new(described_class) }
+
+      it "returns nil" do
+        expect(www_authenticate_header).to be_nil
+      end
+    end
+  end
+
+  describe "#authorized?" do
+    subject(:authorized?) { endpoint.authorized? }
+
+    let(:endpoint) { endpoint_class.new }
+
+    context "when the endpoint class implements #authorized?" do
+      let(:endpoint_class) { Class.new(described_class) { def authorized? = true } }
+
+      it "returns the result" do
+        expect(authorized?).to be(true)
+      end
+    end
+
+    context "when the endpoint class does NOT implement #authorized?" do
+      let(:endpoint_class) { Class.new(described_class) }
+
+      it "returns false" do
+        expect(authorized?).to be(false)
+      end
+    end
+  end
+
   describe "#status" do
     subject(:status) { endpoint.status }
 

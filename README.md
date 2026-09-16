@@ -50,6 +50,14 @@ Here's an example for an HTTP get to the `/hello` route, which returns a hello w
 class MyEndpoint < Liberty::Endpoint
   responds_to :get, '/hello'
 
+  def authenticated?
+    true
+  end
+
+  def authorized?
+    true
+  end
+
   def status
     200
   end
@@ -82,6 +90,49 @@ end
 
 If you configure your CORS headers before you launch your application, `Endpoints` will
 automatically respond with the right headers.
+
+### Authentication & Authorization
+
+Every `Endpoint` has two hooks: `#authenticated?` and `#authorized?`. Both default to `false`,
+so an endpoint that does not implement them responds with `401 Authentication required`. Override
+them to plug in your own auth. Liberty checks `#authenticated?` first and responds with a 401 when
+it returns `false`. It then checks `#authorized?` and responds with `403 Forbidden` when that
+returns `false`. Your endpoint's status, headers, and content are only consulted when both return
+`true`. The raw `Authorization` header is available as `request.headers[:authorization]`.
+
+A 401 response should tell the client how to authenticate. Override `#www_authenticate_header`
+to return the challenge, such as `Bearer realm="api"`, and Liberty adds it as the
+`WWW-Authenticate` header on 401 responses. When it returns `nil` the header is omitted.
+
+Here's an example of how to use `#authenticated?` and `#authorized?`:
+
+```ruby
+class YourEndpoint < Liberty::Endpoint
+  responds_to :get, "/your_endpoint"
+
+  def authenticated?
+    !current_user.nil?
+  end
+
+  def www_authenticate_header
+    'Bearer realm="api"'
+  end
+
+  def authorized?
+    current_user.admin?
+  end
+
+  def current_user
+    @current_user ||= Sessions.find_by_token(bearer_token)
+  end
+
+  private
+
+  def bearer_token
+    request.headers[:authorization].to_s.delete_prefix("Bearer ")
+  end
+end
+```
 
 ## Installation
 

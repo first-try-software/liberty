@@ -1,3 +1,16 @@
+## [0.4.0] - 2026-09-15
+
+### Breaking changes
+
+- Endpoints now offer `authenticated?` and `authorized?` hooks for plugging in your own auth handlers. Both default to `false` to prevent endpoints from being exposed accidentally, so every existing endpoint responds with a 401 until it overrides them. Applications upgrading from older versions must override these methods, either to return `true` or with code that handles auth.
+
+### Added
+
+- Responds with `401 Authentication required` when `authenticated?` returns `false`, and with `403 Forbidden` when `authorized?` returns `false`. The endpoint's status, headers, and content are only consulted when both return `true`.
+- Adds a `www_authenticate_header` hook to endpoints. When it returns a challenge, such as `Bearer realm="api"`, 401 responses include it as the `WWW-Authenticate` header. It defaults to `nil`, which omits the header.
+- Exposes the request's `Authorization` header as `request.headers[:authorization]` so endpoints can read credentials.
+- Responds to `HEAD` requests that fail auth with an empty body and a `content-length` header, as the Rack specification requires.
+
 ## [0.3.1] - 2026-09-07
 
 ### Fixed

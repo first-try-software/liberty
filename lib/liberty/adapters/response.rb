@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "forbidden_response"
+require_relative "unauthenticated_response"
+
 module Liberty
   module Adapters
     class Response
@@ -17,10 +20,21 @@ module Liberty
       end
 
       def to_rack_response
+        return unauthenticated_response unless endpoint.authenticated?
+        return forbidden_response unless endpoint.authorized?
+
         [status, headers, rack_body]
       end
 
       private
+
+      def unauthenticated_response
+        UnauthenticatedResponse.new(endpoint).to_rack_response
+      end
+
+      def forbidden_response
+        ForbiddenResponse.new(endpoint).to_rack_response
+      end
 
       def status
         endpoint.status

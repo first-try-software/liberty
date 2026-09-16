@@ -7,6 +7,7 @@ module Liberty
     class Request
       PARSED_BODY = "parsed_body"
       ROUTER_PARAMS = "router.params"
+      AUTHORIZATION = "HTTP_AUTHORIZATION"
 
       attr_reader :env
 
@@ -15,10 +16,7 @@ module Liberty
       end
 
       def headers
-        @headers ||= env ? {
-          accept_media_types: accept_media_types,
-          preferred_media_type: preferred_media_type
-        } : {}
+        @headers ||= env ? env_headers : {}
       end
 
       def params
@@ -30,6 +28,14 @@ module Liberty
       end
 
       private
+
+      def env_headers
+        {
+          accept_media_types: accept_media_types,
+          preferred_media_type: preferred_media_type,
+          authorization: env[AUTHORIZATION]
+        }
+      end
 
       def all_params
         form_params.merge!(body_params).merge!(url_params)
@@ -73,7 +79,9 @@ module Liberty
       end
 
       def symbolize_keys(hash)
-        hash.each_with_object({}) { |(key, value), obj| obj[key.to_sym] = value }
+        hash.each_with_object({}) do |(key, value), obj|
+          obj[key.to_sym] = value
+        end
       end
 
       def rack_request

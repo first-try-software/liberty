@@ -4,10 +4,66 @@ RSpec.describe Liberty::Adapters::Response do
   describe "#to_rack_response" do
     subject(:to_rack_response) { described_class.new(endpoint).to_rack_response }
 
-    let(:endpoint) { Class.new(Liberty::Endpoint).new }
+    let(:endpoint) { endpoint_class.new }
+    let(:endpoint_class) do
+      Class.new(Liberty::Endpoint) do
+        def authenticated? = true
+
+        def authorized? = true
+      end
+    end
     let(:request) { instance_double(Liberty::Adapters::Request, head?: false) }
 
     before { endpoint.inject(request: request) }
+
+    context "when the endpoint is NOT authenticated" do
+      before do
+        allow(endpoint).to receive(:authenticated?).and_return(false)
+        allow(endpoint).to receive(:authorized?).and_return(false)
+        allow(endpoint).to receive(:json).and_return({key: "value"})
+      end
+
+      it "returns a 401 response" do
+        expect(to_rack_response).to match_array([
+          401,
+          a_hash_including("content-type" => "text/plain"),
+          ["Authentication required"]
+        ])
+      end
+
+      it "does NOT consult the endpoint for authorization" do
+        to_rack_response
+
+        expect(endpoint).not_to have_received(:authorized?)
+      end
+
+      it "does NOT render the endpoint content" do
+        to_rack_response
+
+        expect(endpoint).not_to have_received(:json)
+      end
+    end
+
+    context "when the endpoint is authenticated but NOT authorized" do
+      before do
+        allow(endpoint).to receive(:authorized?).and_return(false)
+        allow(endpoint).to receive(:json).and_return({key: "value"})
+      end
+
+      it "returns a 403 response" do
+        expect(to_rack_response).to match_array([
+          403,
+          a_hash_including("content-type" => "text/plain"),
+          ["Forbidden"]
+        ])
+      end
+
+      it "does NOT render the endpoint content" do
+        to_rack_response
+
+        expect(endpoint).not_to have_received(:json)
+      end
+    end
 
     context "when the request is a HEAD request" do
       let(:request) { instance_double(Liberty::Adapters::Request, head?: true) }

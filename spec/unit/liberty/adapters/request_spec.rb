@@ -40,6 +40,22 @@ RSpec.describe Liberty::Adapters::Request do
       it "includes the preferred media type header" do
         expect(headers).to include(preferred_media_type: json_mime_type)
       end
+
+      context "and the request has an Authorization header" do
+        let(:env) { {"HTTP_AUTHORIZATION" => "Bearer token"} }
+
+        it "includes the authorization header" do
+          expect(headers).to include(authorization: "Bearer token")
+        end
+      end
+
+      context "and the request does NOT have an Authorization header" do
+        let(:env) { {} }
+
+        it "includes a nil authorization header" do
+          expect(headers).to include(authorization: nil)
+        end
+      end
     end
   end
 

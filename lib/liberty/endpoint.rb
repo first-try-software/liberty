@@ -22,6 +22,17 @@ module Liberty
       request.headers[:preferred_media_type]
     end
 
+    def authenticated?
+      false
+    end
+
+    def www_authenticate_header
+    end
+
+    def authorized?
+      false
+    end
+
     def status
       DEFAULT_STATUS
     end
