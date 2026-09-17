@@ -26,15 +26,32 @@ RSpec.describe Liberty::Endpoint do
   end
 
   describe "#inject" do
-    subject(:inject) { endpoint.inject(request: request) }
-
     let(:endpoint) { endpoint_class.new }
     let(:request) { instance_double("request") }
+    let(:principal) { instance_double("principal") }
 
-    before { inject }
+    context "when given a principal" do
+      before { endpoint.inject(request: request, principal: principal) }
 
-    it "sets the request" do
-      expect(endpoint.request).to eq(request)
+      it "sets the request" do
+        expect(endpoint.request).to eq(request)
+      end
+
+      it "sets the principal" do
+        expect(endpoint.principal).to eq(principal)
+      end
+    end
+
+    context "when NOT given a principal" do
+      before { endpoint.inject(request: request) }
+
+      it "sets the request" do
+        expect(endpoint.request).to eq(request)
+      end
+
+      it "leaves the principal nil" do
+        expect(endpoint.principal).to be_nil
+      end
     end
   end
 

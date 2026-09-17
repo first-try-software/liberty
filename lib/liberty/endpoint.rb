@@ -8,10 +8,11 @@ module Liberty
       Liberty.add_endpoint(verb: verb, path: path, endpoint_class: self)
     end
 
-    attr_reader :request
+    attr_reader :request, :principal
 
-    def inject(request:)
+    def inject(request:, principal: nil)
       @request = request
+      @principal = principal
     end
 
     def params
