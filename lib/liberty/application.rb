@@ -2,13 +2,12 @@
 
 require_relative "adapters/request"
 require_relative "adapters/response"
-require_relative "authenticators/public"
 
 module Liberty
   class Application
     attr_reader :endpoint_class, :authenticator
 
-    def initialize(endpoint_class:, authenticator: Authenticators::Public)
+    def initialize(endpoint_class:, authenticator:)
       @endpoint_class = endpoint_class
       @authenticator = authenticator
     end

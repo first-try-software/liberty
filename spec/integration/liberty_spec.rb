@@ -10,7 +10,7 @@ RSpec.describe Liberty do
     let(:options) { {"HTTP_ACCEPT" => "application/json"} }
     let!(:endpoint_class) do
       Class.new(Liberty::Endpoint) do
-        responds_to :get, "/freedom"
+        responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
         def authenticated? = true
 
@@ -45,7 +45,7 @@ RSpec.describe Liberty do
     let(:get_body) { {message: "Freedom!", value: 1}.to_json }
     let!(:endpoint_class) do
       Class.new(Liberty::Endpoint) do
-        responds_to :get, "/freedom"
+        responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
         def authenticated? = true
 
@@ -93,7 +93,7 @@ RSpec.describe Liberty do
       let(:response) { request.get(uri, options) }
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom"
+          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
           def json
             {message: "Freedom!"}
@@ -117,7 +117,7 @@ RSpec.describe Liberty do
       let(:response) { request.get(uri, options) }
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom"
+          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
           def authenticated?
             request.headers[:authorization] == "Bearer secret"
@@ -165,7 +165,7 @@ RSpec.describe Liberty do
       let(:response) { request.get(uri, options) }
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom"
+          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
           def authenticated? = true
 
@@ -196,6 +196,138 @@ RSpec.describe Liberty do
     end
   end
 
+  context "authentication by route" do
+    let(:app) { Rack::Lint.new(Liberty.rack_app) }
+    let(:uri) { "/freedom" }
+    let(:response) { request.get(uri, options) }
+
+    context "with a form login" do
+      let(:options) { {"HTTP_ACCEPT" => "text/html", "rack.session" => session} }
+      let(:session) { {} }
+      let(:to_login) do
+        Class.new(Liberty::Endpoint) do
+          def authenticated? = true
+
+          def authorized? = true
+
+          def status = 303
+
+          def headers = {"location" => "/login"}
+        end
+      end
+      let(:session_authenticator) do
+        challenge = to_login
+        Class.new do
+          define_singleton_method(:principal) { |request| request.env["rack.session"][:user] }
+          define_singleton_method(:challenge) { challenge }
+        end
+      end
+      let!(:endpoint_class) do
+        authenticator = session_authenticator
+        Class.new(Liberty::Endpoint) do
+          responds_to :get, "/freedom", authenticated_by: authenticator
+
+          def authenticated? = true
+
+          def authorized? = true
+
+          def html = "<h1>Welcome, #{principal[:name]}</h1>"
+        end
+      end
+
+      it "redirects to the login page" do
+        expect(response.status).to eq(303)
+        expect(response.headers["location"]).to eq("/login")
+        expect(response.body).to eq("")
+        expect(response.headers["content-length"]).to eq("0")
+      end
+
+      context "and the request is a HEAD request" do
+        let(:response) { request.head(uri, options) }
+
+        it "redirects with an empty body" do
+          expect(response.status).to eq(303)
+          expect(response.headers["location"]).to eq("/login")
+          expect(response.body).to eq("")
+        end
+      end
+
+      context "and the session has a user" do
+        let(:session) { {user: {name: "Alan"}} }
+
+        it "responds with the page, knowing the principal" do
+          expect(response.status).to eq(200)
+          expect(response.headers["content-type"]).to eq("text/html")
+          expect(response.body).to eq("<h1>Welcome, Alan</h1>")
+        end
+      end
+    end
+
+    context "with a bearer token" do
+      let(:options) { {"HTTP_ACCEPT" => "application/json"} }
+      let(:token_challenge) do
+        Class.new(Liberty::Endpoint) do
+          def authenticated? = true
+
+          def authorized? = true
+
+          def status = 401
+
+          def headers = {"www-authenticate" => 'Bearer realm="liberty"'}
+
+          def text = "Authentication required"
+        end
+      end
+      let(:token_authenticator) do
+        challenge = token_challenge
+        Class.new do
+          define_singleton_method(:principal) do |request|
+            {name: "Alan"} if request.headers[:authorization] == "Bearer secret"
+          end
+          define_singleton_method(:challenge) { challenge }
+        end
+      end
+      let!(:endpoint_class) do
+        authenticator = token_authenticator
+        Class.new(Liberty::Endpoint) do
+          responds_to :get, "/freedom", authenticated_by: authenticator
+
+          def authenticated? = true
+
+          def authorized? = true
+
+          def json = {message: "Freedom, #{principal[:name]}!"}
+        end
+      end
+
+      it "responds with 401 and a www-authenticate challenge" do
+        expect(response.status).to eq(401)
+        expect(response.headers["www-authenticate"]).to eq('Bearer realm="liberty"')
+        expect(response.headers["content-type"]).to eq("text/plain")
+        expect(response.body).to eq("Authentication required")
+      end
+
+      context "and the request is a HEAD request" do
+        let(:response) { request.head(uri, options) }
+
+        it "responds with 401 and an empty body" do
+          expect(response.status).to eq(401)
+          expect(response.body).to eq("")
+          expect(response.headers["content-length"]).to eq("23")
+        end
+      end
+
+      context "and the request carries a valid token" do
+        let(:options) { {"HTTP_ACCEPT" => "application/json", "HTTP_AUTHORIZATION" => "Bearer secret"} }
+
+        it "responds with the endpoint's data, knowing the principal" do
+          expect(response.status).to eq(200)
+          expect(response.body).to eq({message: "Freedom, Alan!"}.to_json)
+        end
+      end
+    end
+  end
+
   context "when CORS is configured" do
     before do
       Liberty::CORS.config do |config|
@@ -216,7 +348,7 @@ RSpec.describe Liberty do
       let(:options) { {"HTTP_ACCEPT" => "application/json"} }
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom"
+          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
           def authenticated? = true
 
@@ -237,7 +369,7 @@ RSpec.describe Liberty do
       let(:options) { {"HTTP_ACCEPT" => "application/json"} }
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom"
+          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
           def authenticated? = true
 
@@ -264,7 +396,7 @@ RSpec.describe Liberty do
       let(:options) { {"HTTP_ACCEPT" => "application/json"} }
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom"
+          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
           def authenticated? = true
 
@@ -283,7 +415,7 @@ RSpec.describe Liberty do
       let(:options) { {"HTTP_ACCEPT" => "application/json"} }
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom"
+          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
           def authenticated? = true
 

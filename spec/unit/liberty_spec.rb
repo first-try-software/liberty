@@ -16,11 +16,16 @@ RSpec.describe Liberty do
   describe "#add_endpoint" do
     subject(:add_endpoint) { Liberty.add_endpoint(**params) }
 
-    let(:params) { {verb: :verb, path: :path, endpoint_class: :endpoint_class} }
+    let(:params) { {verb: :verb, path: :path, endpoint_class: :endpoint_class, authenticator: :authenticator} }
 
     before do
       allow(Liberty.router).to receive(:verb)
+      allow(Liberty::Application).to receive(:new).and_call_original
       add_endpoint
+    end
+
+    it "builds an application from the endpoint class and its authenticator" do
+      expect(Liberty::Application).to have_received(:new).with(endpoint_class: :endpoint_class, authenticator: :authenticator)
     end
 
     it "delegates to the router" do

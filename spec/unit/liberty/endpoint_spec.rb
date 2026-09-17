@@ -4,24 +4,33 @@ RSpec.describe Liberty::Endpoint do
   let(:endpoint_class) { Class.new(described_class) }
 
   describe ".responds_to" do
-    subject(:responds_to) { endpoint_class.responds_to(verb, path) }
+    subject(:responds_to) { endpoint_class.responds_to(verb, path, authenticated_by: authenticator) }
 
     let(:verb) { :get }
     let(:path) { "/" }
+    let(:authenticator) { Liberty::Authenticators::Public }
 
-    before do
-      allow(Liberty).to receive(:add_endpoint)
-      responds_to
-    end
+    before { allow(Liberty).to receive(:add_endpoint) }
 
     it "registers endpoint with server" do
+      responds_to
+
       expect(Liberty)
         .to have_received(:add_endpoint)
         .with(
           verb: verb,
           path: path,
-          endpoint_class: endpoint_class
+          endpoint_class: endpoint_class,
+          authenticator: authenticator
         )
+    end
+
+    context "when no authenticator is named" do
+      subject(:responds_to) { endpoint_class.responds_to(verb, path) }
+
+      it "fails at load time" do
+        expect { responds_to }.to raise_error(ArgumentError, /authenticated_by/)
+      end
     end
   end
 

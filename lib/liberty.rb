@@ -25,8 +25,8 @@ module Liberty
     end
   end
 
-  def self.add_endpoint(verb:, path:, endpoint_class:)
-    app = Application.new(endpoint_class: endpoint_class)
+  def self.add_endpoint(verb:, path:, endpoint_class:, authenticator:)
+    app = Application.new(endpoint_class: endpoint_class, authenticator: authenticator)
     router.public_send(verb, path, to: app)
   end
 

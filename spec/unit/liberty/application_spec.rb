@@ -10,16 +10,6 @@ RSpec.describe Liberty::Application do
   let(:authenticator) { class_double(Liberty::Authenticators::Public, principal: principal, challenge: challenge_class) }
   let(:principal) { instance_double("principal") }
 
-  describe "#authenticator" do
-    context "when none is given" do
-      subject(:adapter) { described_class.new(endpoint_class: endpoint_class) }
-
-      it "defaults to the Public authenticator" do
-        expect(adapter.authenticator).to be(Liberty::Authenticators::Public)
-      end
-    end
-  end
-
   describe "#call" do
     subject(:call) { adapter.call(env) }
 
