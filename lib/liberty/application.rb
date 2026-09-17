@@ -2,13 +2,15 @@
 
 require_relative "adapters/request"
 require_relative "adapters/response"
+require_relative "authenticators/public"
 
 module Liberty
   class Application
-    attr_reader :endpoint_class
+    attr_reader :endpoint_class, :authenticator
 
-    def initialize(endpoint_class:)
+    def initialize(endpoint_class:, authenticator: Authenticators::Public)
       @endpoint_class = endpoint_class
+      @authenticator = authenticator
     end
 
     def call(env)
@@ -26,7 +28,18 @@ module Liberty
     end
 
     def endpoint(request)
-      endpoint_class.new.tap { |endpoint| endpoint.inject(request: request) }
+      principal = authenticator.principal(request)
+      build(endpoint_class_for(principal), request, principal)
+    end
+
+    def endpoint_class_for(principal)
+      return endpoint_class if principal
+
+      authenticator.challenge || endpoint_class
+    end
+
+    def build(klass, request, principal)
+      klass.new.tap { |endpoint| endpoint.inject(request: request, principal: principal) }
     end
   end
 end
