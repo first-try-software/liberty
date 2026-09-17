@@ -8,6 +8,7 @@ require "rack/abstract_format"
 
 require_relative "liberty/version"
 require_relative "liberty/endpoint"
+require_relative "liberty/authenticators/public"
 require_relative "liberty/router"
 require_relative "liberty/application"
 require_relative "liberty/cors"
