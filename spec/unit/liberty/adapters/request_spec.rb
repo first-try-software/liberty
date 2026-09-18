@@ -1,58 +1,63 @@
 # frozen_string_literal: true
 
 RSpec.describe Liberty::Adapters::Request do
-  subject(:request) { described_class.new(env) }
-
-  let(:env) { nil }
-
   describe "#headers" do
-    subject(:headers) { request.headers }
-
     context "when the env is nil" do
-      let(:env) { nil }
-
       it "returns an empty hash" do
+        request = described_class.new(nil)
+
+        headers = request.headers
+
         expect(headers).to eq({})
       end
     end
 
     context "when the env is NOT nil" do
-      let(:env) { {} }
-      let(:rack_request) { instance_double(Rack::Request, accept_media_types: accept_media_types) }
-      let(:accept_media_types) { [json_mime_type, html_mime_type] }
-      let(:json_mime_type) { "application/json" }
-      let(:html_mime_type) { "text/html" }
-
-      before do
-        allow(Rack::Request).to receive(:new).and_return(rack_request)
-      end
-
       it "delegates to Rack::Request to get the accept_media_types header" do
-        headers
+        env = Rack::MockRequest.env_for("/", "HTTP_ACCEPT" => "application/json,text/html")
+        request = described_class.new(env)
 
-        expect(Rack::Request).to have_received(:new).with(env)
+        headers = request.headers
+
+        expect(headers[:accept_media_types]).to eq(Rack::Request.new(env).accept_media_types)
       end
 
       it "includes the accept_media_types header" do
-        expect(headers).to include(accept_media_types: accept_media_types)
+        env = Rack::MockRequest.env_for("/", "HTTP_ACCEPT" => "application/json,text/html")
+        request = described_class.new(env)
+
+        headers = request.headers
+
+        expect(headers[:accept_media_types]).to eq(["application/json", "text/html"])
       end
 
       it "includes the preferred media type header" do
-        expect(headers).to include(preferred_media_type: json_mime_type)
+        env = Rack::MockRequest.env_for("/", "HTTP_ACCEPT" => "application/json,text/html")
+        request = described_class.new(env)
+
+        headers = request.headers
+
+        expect(headers[:preferred_media_type]).to eq("application/json")
       end
 
       context "and the request has an Authorization header" do
-        let(:env) { {"HTTP_AUTHORIZATION" => "Bearer token"} }
-
         it "includes the authorization header" do
+          env = Rack::MockRequest.env_for("/", "HTTP_AUTHORIZATION" => "Bearer token")
+          request = described_class.new(env)
+
+          headers = request.headers
+
           expect(headers).to include(authorization: "Bearer token")
         end
       end
 
       context "and the request does NOT have an Authorization header" do
-        let(:env) { {} }
-
         it "includes a nil authorization header" do
+          env = Rack::MockRequest.env_for("/")
+          request = described_class.new(env)
+
+          headers = request.headers
+
           expect(headers).to include(authorization: nil)
         end
       end
@@ -60,99 +65,137 @@ RSpec.describe Liberty::Adapters::Request do
   end
 
   describe "#head?" do
-    subject(:head?) { request.head? }
-
     context "when the env is nil" do
-      let(:env) { nil }
-
       it "returns false" do
-        expect(head?).to be(false)
+        request = described_class.new(nil)
+
+        head = request.head?
+
+        expect(head).to be(false)
       end
     end
 
     context "when the request method is HEAD" do
-      let(:env) { {"REQUEST_METHOD" => "HEAD"} }
-
       it "returns true" do
-        expect(head?).to be(true)
+        request = described_class.new(Rack::MockRequest.env_for("/", method: "HEAD"))
+
+        head = request.head?
+
+        expect(head).to be(true)
       end
     end
 
     context "when the request method is NOT HEAD" do
-      let(:env) { {"REQUEST_METHOD" => "GET"} }
-
       it "returns false" do
-        expect(head?).to be(false)
+        request = described_class.new(Rack::MockRequest.env_for("/", method: "GET"))
+
+        head = request.head?
+
+        expect(head).to be(false)
       end
     end
   end
 
   describe "#params" do
-    subject(:params) { request.params }
-
     context "when the env is nil" do
-      let(:env) { nil }
-
       it "returns an empty hash" do
+        request = described_class.new(nil)
+
+        params = request.params
+
         expect(params).to eq({})
       end
     end
 
     context "when the env is NOT nil" do
-      let(:env) { {"router.params" => url_params} }
-      let(:rack_request) { instance_double(Rack::Request, body: request_body, media_type: media_type, params: form_params) }
-      let(:request_body) { instance_double("request_body", read: body_params.to_json) }
-      let(:media_type) { "application/json" }
-      let(:form_params) { {"form_param" => "form_value"} }
-      let(:body_params) { {"body_param" => "body_value"} }
-      let(:url_params) { {url_param: "url_value"} }
-
-      before do
-        allow(Rack::Request).to receive(:new).and_return(rack_request)
-      end
-
       it "delegates to Rack::Request to get form params" do
-        params
+        env = Rack::MockRequest.env_for("/?form_param=form_value", :method => "POST", "CONTENT_TYPE" => "application/json", :input => {body_param: "body_value"}.to_json)
+        env["router.params"] = {url_param: "url_value"}
+        request = described_class.new(env)
 
-        expect(Rack::Request).to have_received(:new).with(env)
+        params = request.params
+
+        expect(params[:form_param]).to eq(Rack::Request.new(env).params["form_param"])
       end
 
       it "parses params out of the env form data" do
+        env = Rack::MockRequest.env_for("/?form_param=form_value", :method => "POST", "CONTENT_TYPE" => "application/json", :input => {body_param: "body_value"}.to_json)
+        env["router.params"] = {url_param: "url_value"}
+        request = described_class.new(env)
+
+        params = request.params
+
         expect(params).to include(form_param: "form_value")
       end
 
       it "parses params out of the env body" do
+        env = Rack::MockRequest.env_for("/?form_param=form_value", :method => "POST", "CONTENT_TYPE" => "application/json", :input => {body_param: "body_value"}.to_json)
+        env["router.params"] = {url_param: "url_value"}
+        request = described_class.new(env)
+
+        params = request.params
+
         expect(params).to include(body_param: "body_value")
       end
 
       it "parses params out of the env query string" do
+        env = Rack::MockRequest.env_for("/?form_param=form_value", :method => "POST", "CONTENT_TYPE" => "application/json", :input => {body_param: "body_value"}.to_json)
+        env["router.params"] = {url_param: "url_value"}
+        request = described_class.new(env)
+
+        params = request.params
+
         expect(params).to include(url_param: "url_value")
       end
 
       context "when the body is rewindable" do
-        let(:request_body) { instance_double(StringIO, read: body_params.to_json, rewind: 0) }
-
         it "rewinds the body after reading it" do
-          params
+          env = Rack::MockRequest.env_for("/", :method => "POST", "CONTENT_TYPE" => "application/json", :input => {body_param: "body_value"}.to_json)
+          request = described_class.new(env)
 
-          expect(request_body).to have_received(:rewind)
+          request.params
+
+          expect(env["rack.input"].read).to eq({body_param: "body_value"}.to_json)
         end
       end
 
       context "when the body is NOT rewindable" do
         it "does not attempt to rewind the body" do
-          expect { params }.not_to raise_error
+          unrewindable_body = Class.new do
+            def initialize(content) = @content = content
+
+            def read = @content
+          end
+          env = Rack::MockRequest.env_for("/", :method => "POST", "CONTENT_TYPE" => "application/json")
+          env["rack.input"] = unrewindable_body.new({body_param: "body_value"}.to_json)
+          request = described_class.new(env)
+
+          params = request.params
+
+          expect(params).to include(body_param: "body_value")
         end
       end
 
       context "when there is no body" do
-        let(:request_body) { nil }
-
         it "does not include body params" do
+          env = Rack::MockRequest.env_for("/?form_param=form_value", :method => "POST", "CONTENT_TYPE" => "application/json")
+          env["router.params"] = {url_param: "url_value"}
+          env.delete("rack.input")
+          request = described_class.new(env)
+
+          params = request.params
+
           expect(params).not_to include(:body_param)
         end
 
         it "still includes form and query string params" do
+          env = Rack::MockRequest.env_for("/?form_param=form_value", :method => "POST", "CONTENT_TYPE" => "application/json")
+          env["router.params"] = {url_param: "url_value"}
+          env.delete("rack.input")
+          request = described_class.new(env)
+
+          params = request.params
+
           expect(params).to eq(form_param: "form_value", url_param: "url_value")
         end
       end

@@ -2,13 +2,9 @@
 
 RSpec.describe Liberty::Router::Printer do
   describe "#print" do
-    subject(:print) { router.print(stdout) }
-
-    let(:router) { Liberty::Router.new }
-    let(:stdout) { StringIO.new }
-    let(:endpoint) { class_double("endpoint", to_s: "Endpoint") }
-
-    before do
+    it "prints the routes sorted by path and verb" do
+      endpoint = Class.new { def self.to_s = "Endpoint" }
+      router = Liberty::Router.new
       router.delete("/tasks/:id", to: endpoint)
       router.get("/tasks", to: endpoint)
       router.put("/tasks/:id", to: endpoint)
@@ -17,11 +13,10 @@ RSpec.describe Liberty::Router::Printer do
       router.get("/tasks/:id", to: endpoint)
       router.get("/tasks/all/:user_id", to: endpoint)
       router.get("/tasks/:user_id/all", to: endpoint)
+      stdout = StringIO.new
 
-      print
-    end
+      router.print(stdout)
 
-    it "prints the routes sorted by path and verb" do
       expect(stdout.string).to eq(
         <<-ROUTES
      GET /ahoy                                              => Endpoint

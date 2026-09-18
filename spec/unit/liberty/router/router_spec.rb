@@ -5,112 +5,116 @@ require "rack/mock"
 require "json"
 
 RSpec.describe Liberty::Router do
-  subject(:router) { described_class.new }
-
-  let(:app) { Rack::MockRequest.new(router) }
-  let(:endpoint) { ->(env) { [status, headers, [env["router.params"].to_json]] } }
-  let(:status) { 200 }
-  let(:headers) { {"content-type" => "txt/plain"} }
-
   shared_examples "a registered route" do |options|
-    subject(:register_route) { router.public_send(options[:method], registered_path, to: endpoint) }
-
-    let(:response) { app.public_send(options[:method], request_url) }
-    let(:endpoint_response) { JSON.parse(response.body) }
-
-    before do
-      register_route
-    end
-
     context "when the path is the root" do
-      let(:registered_path) { "/" }
-      let(:request_url) { registered_path }
-
       it "calls the endpoint with empty params" do
-        expect(endpoint_response).to eq({})
+        router = described_class.new
+        endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+        router.public_send(options[:method], "/", to: endpoint)
+
+        response = Rack::MockRequest.new(router).public_send(options[:method], "/")
+
+        expect(JSON.parse(response.body)).to eq({})
       end
     end
 
     context "when the path is static" do
-      let(:registered_path) { "/static" }
-      let(:request_url) { registered_path }
-
       it "calls the endpoint with empty params" do
-        expect(endpoint_response).to eq({})
+        router = described_class.new
+        endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+        router.public_send(options[:method], "/static", to: endpoint)
+
+        response = Rack::MockRequest.new(router).public_send(options[:method], "/static")
+
+        expect(JSON.parse(response.body)).to eq({})
       end
     end
 
     context "when the path is dynamic" do
       context "and the path has a dynamic segment" do
-        let(:registered_path) { "/dynamic/:var1" }
-        let(:request_url) { "/dynamic/123" }
-        let(:response_body) { {"var1" => "123"} }
-
         it "calls the endpoint with the router params" do
-          expect(endpoint_response).to eq(response_body)
+          router = described_class.new
+          endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+          router.public_send(options[:method], "/dynamic/:var1", to: endpoint)
+
+          response = Rack::MockRequest.new(router).public_send(options[:method], "/dynamic/123")
+
+          expect(JSON.parse(response.body)).to eq({"var1" => "123"})
         end
       end
 
       context "and the path has multiple dynamic segments" do
-        let(:registered_path) { "/dynamic/:var1/segment/:var2" }
-        let(:request_url) { "/dynamic/123/segment/456" }
-        let(:response_body) { {"var1" => "123", "var2" => "456"} }
-
         it "calls the endpoint with the router params" do
-          expect(endpoint_response).to eq(response_body)
+          router = described_class.new
+          endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+          router.public_send(options[:method], "/dynamic/:var1/segment/:var2", to: endpoint)
+
+          response = Rack::MockRequest.new(router).public_send(options[:method], "/dynamic/123/segment/456")
+
+          expect(JSON.parse(response.body)).to eq({"var1" => "123", "var2" => "456"})
         end
       end
     end
 
     context "when multiple dynamic paths are registered" do
-      let(:registered_path) { "/dynamic/:var1/segment_one" }
-      let(:registered_path_2) { "/dynamic/:var1/segment_two" }
-      let(:request_url) { "/dynamic/123/segment_two" }
-      let(:response_body) { {"var1" => "123"} }
-
-      before do
-        router.public_send(options[:method], registered_path_2, to: endpoint)
-      end
-
       it "calls the endpoint with the router params" do
-        expect(endpoint_response).to eq(response_body)
+        router = described_class.new
+        endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+        router.public_send(options[:method], "/dynamic/:var1/segment_one", to: endpoint)
+        router.public_send(options[:method], "/dynamic/:var1/segment_two", to: endpoint)
+
+        response = Rack::MockRequest.new(router).public_send(options[:method], "/dynamic/123/segment_two")
+
+        expect(JSON.parse(response.body)).to eq({"var1" => "123"})
       end
     end
 
     context "when there is no route for the requested url" do
-      let(:request_url) { "/not_registered" }
-
       context "and the registered path is static" do
-        let(:registered_path) { "/static" }
-
         it "responds with 404" do
+          router = described_class.new
+          endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+          router.public_send(options[:method], "/static", to: endpoint)
+
+          response = Rack::MockRequest.new(router).public_send(options[:method], "/not_registered")
+
           expect(response.status).to eq(404)
         end
       end
 
       context "and the registered path is dynamic" do
-        let(:registered_path) { "/dynamic/:var1" }
-
         it "responds with 404" do
+          router = described_class.new
+          endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+          router.public_send(options[:method], "/dynamic/:var1", to: endpoint)
+
+          response = Rack::MockRequest.new(router).public_send(options[:method], "/not_registered")
+
           expect(response.status).to eq(404)
         end
       end
     end
 
     context "when the route does not match the dynamic segment" do
-      let(:registered_path) { "/dynamic/:var1_:var2/segment2" }
-      let(:request_url) { "/dynamic/1" }
-
       it "responds with 404" do
+        router = described_class.new
+        endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+        router.public_send(options[:method], "/dynamic/:var1_:var2/segment2", to: endpoint)
+
+        response = Rack::MockRequest.new(router).public_send(options[:method], "/dynamic/1")
+
         expect(response.status).to eq(404)
       end
     end
 
     context "when the route is a partial match" do
-      let(:registered_path) { "/dynamic/:var1/segment2" }
-      let(:request_url) { "/dynamic/1/invalid1/invalid2" }
-
       it "responds with 404" do
+        router = described_class.new
+        endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+        router.public_send(options[:method], "/dynamic/:var1/segment2", to: endpoint)
+
+        response = Rack::MockRequest.new(router).public_send(options[:method], "/dynamic/1/invalid1/invalid2")
+
         expect(response.status).to eq(404)
       end
     end
@@ -120,32 +124,46 @@ RSpec.describe Liberty::Router do
     it_behaves_like "a registered route", method: :get
 
     context "when the request is a HEAD request" do
-      let(:response) { app.head(request_url) }
-
-      before do
-        router.get("/static", to: endpoint)
-      end
-
       context "and the url matches a registered GET route" do
-        let(:request_url) { "/static" }
-
         it "calls the endpoint" do
+          router = described_class.new
+          endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+          router.get("/static", to: endpoint)
+
+          response = Rack::MockRequest.new(router).head("/static")
+
           expect(response.status).to eq(200)
         end
       end
 
       context "and there is no route for the requested url" do
-        let(:request_url) { "/not_registered" }
-
         it "responds with 404" do
+          router = described_class.new
+          endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+          router.get("/static", to: endpoint)
+
+          response = Rack::MockRequest.new(router).head("/not_registered")
+
           expect(response.status).to eq(404)
         end
 
         it "responds with an empty body" do
+          router = described_class.new
+          endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+          router.get("/static", to: endpoint)
+
+          response = Rack::MockRequest.new(router).head("/not_registered")
+
           expect(response.body).to eq("")
         end
 
         it "reports the content length of the GET body" do
+          router = described_class.new
+          endpoint = ->(env) { [200, {"content-type" => "text/plain"}, [env["router.params"].to_json]] }
+          router.get("/static", to: endpoint)
+
+          response = Rack::MockRequest.new(router).head("/not_registered")
+
           expect(response.headers["content-length"]).to eq("9")
         end
       end
@@ -169,16 +187,16 @@ RSpec.describe Liberty::Router do
   end
 
   describe "#print" do
-    subject(:print) { router.print }
-    let(:printer) { instance_double(Liberty::Router::Printer, print: true) }
-
-    before do
-      allow(Liberty::Router::Printer).to receive(:new).and_return(printer)
-      print
-    end
-
     it "delegates to the printer" do
-      expect(printer).to have_received(:print)
+      router = described_class.new
+      endpoint = Class.new { def self.to_s = "Endpoint" }
+      router.get("/static", to: endpoint)
+      stdout = StringIO.new
+
+      router.print(stdout)
+
+      expect(stdout.string).to include("GET /static")
+      expect(stdout.string).to include("=> Endpoint")
     end
   end
 end
