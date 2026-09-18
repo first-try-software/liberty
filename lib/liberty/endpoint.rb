@@ -5,7 +5,12 @@ module Liberty
     DEFAULT_STATUS = 200
 
     def self.responds_to(verb, path, authenticated_by:)
-      Liberty.add_endpoint(verb: verb, path: path, endpoint_class: self, authenticator: authenticated_by)
+      Liberty.add_endpoint(
+        verb: verb,
+        path: path,
+        endpoint_class: self,
+        authenticator_class: authenticated_by
+      )
     end
 
     attr_reader :request, :principal

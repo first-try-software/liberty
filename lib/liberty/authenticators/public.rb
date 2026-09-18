@@ -1,21 +1,17 @@
 # frozen_string_literal: true
 
+require_relative "../authenticator"
+
 module Liberty
   module Authenticators
     # The authenticator for open routes. It never finds a principal and never
     # challenges, so every request is admitted with a nil principal.
-    #
-    # Any object that answers these two questions can authenticate a route:
-    #
-    #   principal(request): who the request is from, or nil
-    #   challenge: the endpoint class that answers when there is no
-    #              principal, or nil to admit the request anyway
-    class Public
-      def self.principal(_request)
+    class Public < Liberty::Authenticator
+      def principal
         nil
       end
 
-      def self.challenge
+      def challenge_endpoint_class
         nil
       end
     end

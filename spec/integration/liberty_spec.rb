@@ -1,74 +1,55 @@
 # frozen_string_literal: true
 
 RSpec.describe Liberty do
-  let(:request) { Rack::MockRequest.new(app) }
-  let(:app) { Liberty.rack_app }
-
   context "user defined endpoint" do
-    let(:uri) { "/freedom?value=1" }
-    let(:response) { request.get(uri, options) }
-    let(:options) { {"HTTP_ACCEPT" => "application/json"} }
-    let!(:endpoint_class) do
+    it "responds with the user provided data" do
       Class.new(Liberty::Endpoint) do
         responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
-        def status
-          201
-        end
+        def status = 201
 
-        def json
-          {message: "Freedom!", value: params[:value].to_i}
-        end
+        def json = {message: "Freedom!", value: params[:value].to_i}
 
-        def headers
-          {"x-custom-header" => "custom value"}
-        end
+        def headers = {"x-custom-header" => "custom value"}
       end
-    end
+      request = Rack::MockRequest.new(Liberty.rack_app)
 
-    it "responds with the user provided data" do
-      expect(response.body).to eq({message: "Freedom!", value: 1}.to_json)
+      response = request.get("/freedom?value=1", "HTTP_ACCEPT" => "application/json")
+
       expect(response.status).to eq(201)
+      expect(response.body).to eq({message: "Freedom!", value: 1}.to_json)
       expect(response.headers["X-Custom-Header"]).to eq("custom value")
     end
   end
 
   context "HEAD request" do
-    let(:app) { Rack::Lint.new(Liberty.rack_app) }
-    let(:uri) { "/freedom?value=1" }
-    let(:response) { request.head(uri, options) }
-    let(:options) { {"HTTP_ACCEPT" => "application/json"} }
-    let(:get_body) { {message: "Freedom!", value: 1}.to_json }
-    let!(:endpoint_class) do
+    it "responds with the GET status and headers, but an empty body" do
       Class.new(Liberty::Endpoint) do
         responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
-        def status
-          201
-        end
+        def status = 201
 
-        def json
-          {message: "Freedom!", value: params[:value].to_i}
-        end
+        def json = {message: "Freedom!", value: params[:value].to_i}
 
-        def headers
-          {"x-custom-header" => "custom value"}
-        end
+        def headers = {"x-custom-header" => "custom value"}
       end
-    end
+      request = Rack::MockRequest.new(Rack::Lint.new(Liberty.rack_app))
 
-    it "responds with the GET status and headers, but an empty body" do
-      expect(response.body).to eq("")
+      response = request.head("/freedom?value=1", "HTTP_ACCEPT" => "application/json")
+
       expect(response.status).to eq(201)
-      expect(response.headers["content-length"]).to eq(get_body.bytesize.to_s)
+      expect(response.body).to eq("")
+      expect(response.headers["content-length"]).to eq({message: "Freedom!", value: 1}.to_json.bytesize.to_s)
       expect(response.headers["content-type"]).to eq("application/json")
       expect(response.headers["x-custom-header"]).to eq("custom value")
     end
 
     context "when there is no route for the requested url" do
-      let(:uri) { "/nowhere" }
-
       it "responds with 404 and an empty body" do
+        request = Rack::MockRequest.new(Rack::Lint.new(Liberty.rack_app))
+
+        response = request.head("/nowhere", "HTTP_ACCEPT" => "application/json")
+
         expect(response.status).to eq(404)
         expect(response.body).to eq("")
         expect(response.headers["content-length"]).to eq("9")
@@ -77,37 +58,28 @@ RSpec.describe Liberty do
   end
 
   context "authentication by route" do
-    let(:app) { Rack::Lint.new(Liberty.rack_app) }
-    let(:uri) { "/freedom" }
-    let(:response) { request.get(uri, options) }
-
     context "with a form login" do
-      let(:options) { {"HTTP_ACCEPT" => "text/html", "rack.session" => session} }
-      let(:session) { {} }
-      let(:to_login) do
-        Class.new(Liberty::Endpoint) do
-          def status = 303
+      it "redirects to the login page" do
+        session_authenticator = Class.new(Liberty::Authenticator) do
+          def principal = request.env["rack.session"][:user]
 
-          def headers = {"location" => "/login"}
+          def challenge_endpoint_class
+            Class.new(Liberty::Endpoint) do
+              def status = 303
+
+              def headers = {"location" => "/login"}
+            end
+          end
         end
-      end
-      let(:session_authenticator) do
-        challenge = to_login
-        Class.new do
-          define_singleton_method(:principal) { |request| request.env["rack.session"][:user] }
-          define_singleton_method(:challenge) { challenge }
-        end
-      end
-      let!(:endpoint_class) do
-        authenticator = session_authenticator
         Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom", authenticated_by: authenticator
+          responds_to :get, "/freedom", authenticated_by: session_authenticator
 
           def html = "<h1>Welcome, #{principal[:name]}</h1>"
         end
-      end
+        request = Rack::MockRequest.new(Rack::Lint.new(Liberty.rack_app))
 
-      it "redirects to the login page" do
+        response = request.get("/freedom", "HTTP_ACCEPT" => "text/html", "rack.session" => {})
+
         expect(response.status).to eq(303)
         expect(response.headers["location"]).to eq("/login")
         expect(response.body).to eq("")
@@ -115,9 +87,27 @@ RSpec.describe Liberty do
       end
 
       context "and the request is a HEAD request" do
-        let(:response) { request.head(uri, options) }
-
         it "redirects with an empty body" do
+          session_authenticator = Class.new(Liberty::Authenticator) do
+            def principal = request.env["rack.session"][:user]
+
+            def challenge_endpoint_class
+              Class.new(Liberty::Endpoint) do
+                def status = 303
+
+                def headers = {"location" => "/login"}
+              end
+            end
+          end
+          Class.new(Liberty::Endpoint) do
+            responds_to :get, "/freedom", authenticated_by: session_authenticator
+
+            def html = "<h1>Welcome, #{principal[:name]}</h1>"
+          end
+          request = Rack::MockRequest.new(Rack::Lint.new(Liberty.rack_app))
+
+          response = request.head("/freedom", "HTTP_ACCEPT" => "text/html", "rack.session" => {})
+
           expect(response.status).to eq(303)
           expect(response.headers["location"]).to eq("/login")
           expect(response.body).to eq("")
@@ -125,9 +115,27 @@ RSpec.describe Liberty do
       end
 
       context "and the session has a user" do
-        let(:session) { {user: {name: "Alan"}} }
-
         it "responds with the page, knowing the principal" do
+          session_authenticator = Class.new(Liberty::Authenticator) do
+            def principal = request.env["rack.session"][:user]
+
+            def challenge_endpoint_class
+              Class.new(Liberty::Endpoint) do
+                def status = 303
+
+                def headers = {"location" => "/login"}
+              end
+            end
+          end
+          Class.new(Liberty::Endpoint) do
+            responds_to :get, "/freedom", authenticated_by: session_authenticator
+
+            def html = "<h1>Welcome, #{principal[:name]}</h1>"
+          end
+          request = Rack::MockRequest.new(Rack::Lint.new(Liberty.rack_app))
+
+          response = request.get("/freedom", "HTTP_ACCEPT" => "text/html", "rack.session" => {user: {name: "Alan"}})
+
           expect(response.status).to eq(200)
           expect(response.headers["content-type"]).to eq("text/html")
           expect(response.body).to eq("<h1>Welcome, Alan</h1>")
@@ -136,35 +144,31 @@ RSpec.describe Liberty do
     end
 
     context "with a bearer token" do
-      let(:options) { {"HTTP_ACCEPT" => "application/json"} }
-      let(:token_challenge) do
-        Class.new(Liberty::Endpoint) do
-          def status = 401
-
-          def headers = {"www-authenticate" => 'Bearer realm="liberty"'}
-
-          def text = "Authentication required"
-        end
-      end
-      let(:token_authenticator) do
-        challenge = token_challenge
-        Class.new do
-          define_singleton_method(:principal) do |request|
+      it "responds with 401 and a www-authenticate challenge" do
+        token_authenticator = Class.new(Liberty::Authenticator) do
+          def principal
             {name: "Alan"} if request.headers[:authorization] == "Bearer secret"
           end
-          define_singleton_method(:challenge) { challenge }
+
+          def challenge_endpoint_class
+            Class.new(Liberty::Endpoint) do
+              def status = 401
+
+              def headers = {"www-authenticate" => 'Bearer realm="liberty"'}
+
+              def text = "Authentication required"
+            end
+          end
         end
-      end
-      let!(:endpoint_class) do
-        authenticator = token_authenticator
         Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom", authenticated_by: authenticator
+          responds_to :get, "/freedom", authenticated_by: token_authenticator
 
           def json = {message: "Freedom, #{principal[:name]}!"}
         end
-      end
+        request = Rack::MockRequest.new(Rack::Lint.new(Liberty.rack_app))
 
-      it "responds with 401 and a www-authenticate challenge" do
+        response = request.get("/freedom", "HTTP_ACCEPT" => "application/json")
+
         expect(response.status).to eq(401)
         expect(response.headers["www-authenticate"]).to eq('Bearer realm="liberty"')
         expect(response.headers["content-type"]).to eq("text/plain")
@@ -172,9 +176,31 @@ RSpec.describe Liberty do
       end
 
       context "and the request is a HEAD request" do
-        let(:response) { request.head(uri, options) }
-
         it "responds with 401 and an empty body" do
+          token_authenticator = Class.new(Liberty::Authenticator) do
+            def principal
+              {name: "Alan"} if request.headers[:authorization] == "Bearer secret"
+            end
+
+            def challenge_endpoint_class
+              Class.new(Liberty::Endpoint) do
+                def status = 401
+
+                def headers = {"www-authenticate" => 'Bearer realm="liberty"'}
+
+                def text = "Authentication required"
+              end
+            end
+          end
+          Class.new(Liberty::Endpoint) do
+            responds_to :get, "/freedom", authenticated_by: token_authenticator
+
+            def json = {message: "Freedom, #{principal[:name]}!"}
+          end
+          request = Rack::MockRequest.new(Rack::Lint.new(Liberty.rack_app))
+
+          response = request.head("/freedom", "HTTP_ACCEPT" => "application/json")
+
           expect(response.status).to eq(401)
           expect(response.body).to eq("")
           expect(response.headers["content-length"]).to eq("23")
@@ -182,9 +208,31 @@ RSpec.describe Liberty do
       end
 
       context "and the request carries a valid token" do
-        let(:options) { {"HTTP_ACCEPT" => "application/json", "HTTP_AUTHORIZATION" => "Bearer secret"} }
-
         it "responds with the endpoint's data, knowing the principal" do
+          token_authenticator = Class.new(Liberty::Authenticator) do
+            def principal
+              {name: "Alan"} if request.headers[:authorization] == "Bearer secret"
+            end
+
+            def challenge_endpoint_class
+              Class.new(Liberty::Endpoint) do
+                def status = 401
+
+                def headers = {"www-authenticate" => 'Bearer realm="liberty"'}
+
+                def text = "Authentication required"
+              end
+            end
+          end
+          Class.new(Liberty::Endpoint) do
+            responds_to :get, "/freedom", authenticated_by: token_authenticator
+
+            def json = {message: "Freedom, #{principal[:name]}!"}
+          end
+          request = Rack::MockRequest.new(Rack::Lint.new(Liberty.rack_app))
+
+          response = request.get("/freedom", "HTTP_ACCEPT" => "application/json", "HTTP_AUTHORIZATION" => "Bearer secret")
+
           expect(response.status).to eq(200)
           expect(response.body).to eq({message: "Freedom, Alan!"}.to_json)
         end
@@ -193,30 +241,20 @@ RSpec.describe Liberty do
   end
 
   context "when CORS is configured" do
-    before do
-      Liberty::CORS.config do |config|
-        config.headers = {
-          "Access-Control-Allow-Origin" => "*",
-          "Access-Control-Allow-Methods" => "GET, OPTIONS"
-        }
-      end
-    end
-
-    after do
-      Liberty::CORS.config { |config| config.headers = {} }
-    end
+    after { Liberty::CORS.config { |config| config.headers = {} } }
 
     context "and there is a CORS request" do
-      let(:uri) { "/freedom" }
-      let(:response) { request.options(uri, options) }
-      let(:options) { {"HTTP_ACCEPT" => "application/json"} }
-      let!(:endpoint_class) do
+      it "responds with a CORS response" do
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
         end
-      end
+        Liberty::CORS.config do |config|
+          config.headers = {"Access-Control-Allow-Origin" => "*", "Access-Control-Allow-Methods" => "GET, OPTIONS"}
+        end
+        request = Rack::MockRequest.new(Liberty.rack_app)
 
-      it "responds with a CORS response" do
+        response = request.options("/freedom", "HTTP_ACCEPT" => "application/json")
+
         expect(response.status).to eq(200)
         expect(response.body).to eq("")
         expect(response.headers["Access-Control-Allow-Origin"]).to eq("*")
@@ -224,16 +262,17 @@ RSpec.describe Liberty do
     end
 
     context "and there is a non-CORS request" do
-      let(:uri) { "/freedom" }
-      let(:response) { request.get(uri, options) }
-      let(:options) { {"HTTP_ACCEPT" => "application/json"} }
-      let!(:endpoint_class) do
+      it "includes the Access-Control-Allow-Origin header" do
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
         end
-      end
+        Liberty::CORS.config do |config|
+          config.headers = {"Access-Control-Allow-Origin" => "*", "Access-Control-Allow-Methods" => "GET, OPTIONS"}
+        end
+        request = Rack::MockRequest.new(Liberty.rack_app)
 
-      it "includes the Access-Control-Allow-Origin header" do
+        response = request.get("/freedom", "HTTP_ACCEPT" => "application/json")
+
         expect(response.status).to eq(200)
         expect(response.body).to eq("")
         expect(response.headers["Access-Control-Allow-Origin"]).to eq("*")
@@ -242,36 +281,30 @@ RSpec.describe Liberty do
   end
 
   context "when CORS is NOT configured" do
-    before do
-      Liberty::CORS.config { |config| config.headers = {} }
-    end
-
     context "and there is a CORS request" do
-      let(:uri) { "/freedom" }
-      let(:response) { request.options(uri, options) }
-      let(:options) { {"HTTP_ACCEPT" => "application/json"} }
-      let!(:endpoint_class) do
+      it "responds with a 404 response" do
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
         end
-      end
+        Liberty::CORS.config { |config| config.headers = {} }
+        request = Rack::MockRequest.new(Liberty.rack_app)
 
-      it "responds with a 404 response" do
+        response = request.options("/freedom", "HTTP_ACCEPT" => "application/json")
+
         expect(response.status).to eq(404)
       end
     end
 
     context "and there is a non-CORS request" do
-      let(:uri) { "/freedom" }
-      let(:response) { request.get(uri, options) }
-      let(:options) { {"HTTP_ACCEPT" => "application/json"} }
-      let!(:endpoint_class) do
+      it "does NOT include an Access-Control-Allow-Origin header" do
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
         end
-      end
+        Liberty::CORS.config { |config| config.headers = {} }
+        request = Rack::MockRequest.new(Liberty.rack_app)
 
-      it "does NOT include an Access-Control-Allow-Origin header" do
+        response = request.get("/freedom", "HTTP_ACCEPT" => "application/json")
+
         expect(response.status).to eq(200)
         expect(response.body).to eq("")
         expect(response.headers["Access-Control-Allow-Origin"]).to be_nil
