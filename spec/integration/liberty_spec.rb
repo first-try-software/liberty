@@ -12,10 +12,6 @@ RSpec.describe Liberty do
       Class.new(Liberty::Endpoint) do
         responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
 
-        def authenticated? = true
-
-        def authorized? = true
-
         def status
           201
         end
@@ -46,10 +42,6 @@ RSpec.describe Liberty do
     let!(:endpoint_class) do
       Class.new(Liberty::Endpoint) do
         responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
-
-        def authenticated? = true
-
-        def authorized? = true
 
         def status
           201
@@ -84,118 +76,6 @@ RSpec.describe Liberty do
     end
   end
 
-  context "authentication and authorization" do
-    let(:app) { Rack::Lint.new(Liberty.rack_app) }
-    let(:uri) { "/freedom" }
-    let(:options) { {"HTTP_ACCEPT" => "application/json"} }
-
-    context "when the endpoint does NOT implement the auth hooks" do
-      let(:response) { request.get(uri, options) }
-      let!(:endpoint_class) do
-        Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
-
-          def json
-            {message: "Freedom!"}
-          end
-        end
-      end
-
-      it "responds with 401" do
-        expect(response.status).to eq(401)
-        expect(response.body).to eq("Authentication required")
-        expect(response.headers["content-type"]).to eq("text/plain")
-        expect(response.headers["content-length"]).to eq("23")
-      end
-
-      it "does NOT include a www-authenticate header" do
-        expect(response.headers).not_to have_key("www-authenticate")
-      end
-    end
-
-    context "when the endpoint is NOT authenticated" do
-      let(:response) { request.get(uri, options) }
-      let!(:endpoint_class) do
-        Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
-
-          def authenticated?
-            request.headers[:authorization] == "Bearer secret"
-          end
-
-          def www_authenticate_header
-            'Bearer realm="liberty"'
-          end
-
-          def authorized? = true
-
-          def json
-            {message: "Freedom!"}
-          end
-        end
-      end
-
-      it "responds with 401 and a www-authenticate challenge" do
-        expect(response.status).to eq(401)
-        expect(response.body).to eq("Authentication required")
-        expect(response.headers["www-authenticate"]).to eq('Bearer realm="liberty"')
-      end
-
-      context "and the request is a HEAD request" do
-        let(:response) { request.head(uri, options) }
-
-        it "responds with 401 and an empty body" do
-          expect(response.status).to eq(401)
-          expect(response.body).to eq("")
-          expect(response.headers["content-length"]).to eq("23")
-        end
-      end
-
-      context "and the request carries valid credentials" do
-        let(:options) { {"HTTP_ACCEPT" => "application/json", "HTTP_AUTHORIZATION" => "Bearer secret"} }
-
-        it "responds with the user provided data" do
-          expect(response.status).to eq(200)
-          expect(response.body).to eq({message: "Freedom!"}.to_json)
-        end
-      end
-    end
-
-    context "when the endpoint is authenticated but NOT authorized" do
-      let(:response) { request.get(uri, options) }
-      let!(:endpoint_class) do
-        Class.new(Liberty::Endpoint) do
-          responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
-
-          def authenticated? = true
-
-          def authorized? = false
-
-          def json
-            {message: "Freedom!"}
-          end
-        end
-      end
-
-      it "responds with 403" do
-        expect(response.status).to eq(403)
-        expect(response.body).to eq("Forbidden")
-        expect(response.headers["content-type"]).to eq("text/plain")
-        expect(response.headers["content-length"]).to eq("9")
-      end
-
-      context "and the request is a HEAD request" do
-        let(:response) { request.head(uri, options) }
-
-        it "responds with 403 and an empty body" do
-          expect(response.status).to eq(403)
-          expect(response.body).to eq("")
-          expect(response.headers["content-length"]).to eq("9")
-        end
-      end
-    end
-  end
-
   context "authentication by route" do
     let(:app) { Rack::Lint.new(Liberty.rack_app) }
     let(:uri) { "/freedom" }
@@ -206,10 +86,6 @@ RSpec.describe Liberty do
       let(:session) { {} }
       let(:to_login) do
         Class.new(Liberty::Endpoint) do
-          def authenticated? = true
-
-          def authorized? = true
-
           def status = 303
 
           def headers = {"location" => "/login"}
@@ -226,10 +102,6 @@ RSpec.describe Liberty do
         authenticator = session_authenticator
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: authenticator
-
-          def authenticated? = true
-
-          def authorized? = true
 
           def html = "<h1>Welcome, #{principal[:name]}</h1>"
         end
@@ -267,10 +139,6 @@ RSpec.describe Liberty do
       let(:options) { {"HTTP_ACCEPT" => "application/json"} }
       let(:token_challenge) do
         Class.new(Liberty::Endpoint) do
-          def authenticated? = true
-
-          def authorized? = true
-
           def status = 401
 
           def headers = {"www-authenticate" => 'Bearer realm="liberty"'}
@@ -291,10 +159,6 @@ RSpec.describe Liberty do
         authenticator = token_authenticator
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: authenticator
-
-          def authenticated? = true
-
-          def authorized? = true
 
           def json = {message: "Freedom, #{principal[:name]}!"}
         end
@@ -349,10 +213,6 @@ RSpec.describe Liberty do
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
-
-          def authenticated? = true
-
-          def authorized? = true
         end
       end
 
@@ -370,10 +230,6 @@ RSpec.describe Liberty do
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
-
-          def authenticated? = true
-
-          def authorized? = true
         end
       end
 
@@ -397,10 +253,6 @@ RSpec.describe Liberty do
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
-
-          def authenticated? = true
-
-          def authorized? = true
         end
       end
 
@@ -416,10 +268,6 @@ RSpec.describe Liberty do
       let!(:endpoint_class) do
         Class.new(Liberty::Endpoint) do
           responds_to :get, "/freedom", authenticated_by: Liberty::Authenticators::Public
-
-          def authenticated? = true
-
-          def authorized? = true
         end
       end
 
