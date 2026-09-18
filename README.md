@@ -37,10 +37,13 @@ That said, Liberty does not use convention. It relies on classes declaratively r
 
 ## Usage
 
-Liberty consists of four top level classes:
+Liberty consists of these top level classes:
 * Endpoint
+* Authenticator
+* Authenticators::Public
 * CORS
 * Application (private)
+* EndpointBuilder (private)
 * Router (private)
 
 Inherit from the `Endpoint` class to create class that responds to a single type of request.
@@ -48,15 +51,7 @@ Here's an example for an HTTP get to the `/hello` route, which returns a hello w
 
 ```ruby
 class MyEndpoint < Liberty::Endpoint
-  responds_to :get, '/hello'
-
-  def authenticated?
-    true
-  end
-
-  def authorized?
-    true
-  end
+  responds_to :get, '/hello', authenticated_by: Liberty::Authenticators::Public
 
   def status
     200
@@ -70,7 +65,8 @@ end
 
 Using `responds_to` as in the example above registers a class to receive traffic on that route
 with our incredibly fast `Router`. You shouldn't ever need to use the `Router` directly. Just
-use `responds_to` to register your route.
+use `responds_to` to register your route. Every route names its authenticator; `Public` is the
+one Liberty ships for routes open to anyone. See [Authentication](#authentication) below.
 
 The `Application` class is another private class that turns each `Endpoint` class into a
 Rack application. This is also a class you won't use directly.
@@ -91,48 +87,121 @@ end
 If you configure your CORS headers before you launch your application, `Endpoints` will
 automatically respond with the right headers.
 
-### Authentication & Authorization
+### Authentication
 
-Every `Endpoint` has two hooks: `#authenticated?` and `#authorized?`. Both default to `false`,
-so an endpoint that does not implement them responds with `401 Authentication required`. Override
-them to plug in your own auth. Liberty checks `#authenticated?` first and responds with a 401 when
-it returns `false`. It then checks `#authorized?` and responds with `403 Forbidden` when that
-returns `false`. Your endpoint's status, headers, and content are only consulted when both return
-`true`. The raw `Authorization` header is available as `request.headers[:authorization]`.
-
-A 401 response should tell the client how to authenticate. Override `#www_authenticate_header`
-to return the challenge, such as `Bearer realm="api"`, and Liberty adds it as the
-`WWW-Authenticate` header on 401 responses. When it returns `nil` the header is omitted.
-
-Here's an example of how to use `#authenticated?` and `#authorized?`:
+Every route names its authenticator:
 
 ```ruby
-class YourEndpoint < Liberty::Endpoint
-  responds_to :get, "/your_endpoint"
+class Journal < Liberty::Endpoint
+  responds_to :get, "/journal", authenticated_by: Authenticators::Session
+end
+```
 
-  def authenticated?
-    !current_user.nil?
+`authenticated_by:` is required. A route that does not name one fails when the class loads, so
+nothing is exposed by omission. To open a route to anyone, name `Liberty::Authenticators::Public`.
+
+An authenticator is a subclass of `Liberty::Authenticator` that answers two
+questions:
+
+- `principal`: who the request is from, or `nil`. The principal is whoever the request has been
+  authenticated as, whether a user, a service account, or an API client. It is any object your
+  application chooses.
+- `challenge_endpoint_class`: the endpoint class that answers when there is no principal, or
+  `nil` to admit the request anyway.
+
+The base class raises on both until you override them, so an authenticator cannot admit anyone
+by omission either.
+
+Liberty builds a new authenticator for every request and injects the request, available as
+`request`, the same way it builds your endpoint. Every name ending in `_class` follows one rule
+throughout Liberty: it names a class that Liberty instantiates for you. With a principal, Liberty
+builds your endpoint. Without one, it builds the challenge instead. Either way, the endpoint
+receives the request and the principal, available as `principal`, and its answers go through the
+same response pipeline, so `HEAD` requests, `content-length`, and `content-type` are handled once.
+
+Liberty ships no authenticator but `Public`, and no 401 or 403 of its own. What a request without
+a principal sees is the application's to decide: a login page for a form, a `WWW-Authenticate`
+challenge for a token.
+
+Here's a form login backed by a session. The request is injected after construction, so the
+authenticator takes its repository through its own initializer with a production default, and a
+test can hand it a fake:
+
+```ruby
+module Authenticators
+  class Session < Liberty::Authenticator
+    def initialize(users: UsersRepository.new)
+      @users = users
+    end
+
+    def principal
+      @users.find(request.env["rack.session"][:user_id])
+    end
+
+    def challenge_endpoint_class = RedirectToLogin
   end
+end
 
-  def www_authenticate_header
-    'Bearer realm="api"'
+class RedirectToLogin < Liberty::Endpoint
+  def status = 303
+
+  def headers = {"location" => "/login"}
+end
+
+class Journal < Liberty::Endpoint
+  responds_to :get, "/journal", authenticated_by: Authenticators::Session
+
+  def html = "<h1>Welcome, #{principal.name}</h1>"
+end
+```
+
+Here's a bearer token. The credential arrives in the `Authorization` header, which every request
+exposes as `request.headers[:authorization]`. Despite its name, that header carries a credential
+that has not been checked yet. Checking it is the authenticator's job:
+
+```ruby
+module Authenticators
+  class Token < Liberty::Authenticator
+    def initialize(sessions: ApiSessionsRepository.new)
+      @sessions = sessions
+    end
+
+    def principal
+      @sessions.find_by_token(bearer_token)
+    end
+
+    def challenge_endpoint_class = TokenChallenge
+
+    private
+
+    def bearer_token
+      request.headers[:authorization].to_s.delete_prefix("Bearer ")
+    end
   end
+end
 
-  def authorized?
-    current_user.admin?
-  end
+class TokenChallenge < Liberty::Endpoint
+  def status = 401
 
-  def current_user
-    @current_user ||= Sessions.find_by_token(bearer_token)
-  end
+  def headers = {"www-authenticate" => 'Bearer realm="api"'}
 
-  private
+  def text = "Authentication required"
+end
+```
 
-  def bearer_token
-    request.headers[:authorization].to_s.delete_prefix("Bearer ")
+A page that anyone may see, but that still wants to know a signed-in user, is a session
+authenticator that never challenges:
+
+```ruby
+module Authenticators
+  class Optional < Session
+    def challenge_endpoint_class = nil
   end
 end
 ```
+
+Authorization is the endpoint's own answer. When the principal may not do what the request asks,
+the endpoint responds with the status and content it chooses, such as a 403.
 
 ## Installation
 

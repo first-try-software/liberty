@@ -1,3 +1,20 @@
+## [0.5.0] - 2026-09-17
+
+### Breaking changes
+
+- Replaces the 0.4.0 authentication hooks, which could only answer a 401. Routes now name their authenticator: `responds_to` takes a required `authenticated_by:` keyword, and a route that names none fails at load. Gone are the endpoint hooks `authenticated?`, `authorized?`, and `www_authenticate_header`, and Liberty's built-in 401 and 403 responses. Applications on 0.4.0 move their credential check into an authenticator and their 401 into a challenge endpoint. Applications on 0.3.x name `Liberty::Authenticators::Public` on every route they mean to leave open.
+
+### Added
+
+- Authenticators. A subclass of `Liberty::Authenticator` answers `principal` and `challenge_endpoint_class`. Liberty builds one per request, injects the request, and asks before the endpoint exists, then builds either the endpoint or the challenge. The challenge is an ordinary endpoint class the application writes, so a form login can answer a 303 to its login page and a token API can answer a 401 with a `WWW-Authenticate` header, each through the same response pipeline as every other endpoint.
+- `Liberty::Error`, the base for every error Liberty raises, and `Liberty::AbstractMethodError`, raised when an authenticator leaves one of its two answers unimplemented.
+- `Liberty::Authenticators::Public`, the authenticator for open routes. It finds no principal and never challenges.
+- `Endpoint#principal`, whoever the authenticator found for the request, or `nil`.
+
+### Kept
+
+- `request.headers[:authorization]`, and empty bodies with a `content-length` for `HEAD` requests, both from 0.4.0.
+
 ## [0.4.0] - 2026-09-15
 
 ### Breaking changes
