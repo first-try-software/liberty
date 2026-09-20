@@ -3,7 +3,7 @@
 # Liberty
 
 [![Gem Version](https://badge.fury.io/rb/liberty.svg)](https://badge.fury.io/rb/liberty)
-[![Ruby](https://github.com/first-try-software/liberty/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/first-try-software/liberty/actions/workflows/main.yml)
+[![CI](https://github.com/first-try-software/liberty/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/first-try-software/liberty/actions/workflows/main.yml)
 
 Liberty is the state of being free from oppressive restrictions imposed by authority.
 
@@ -143,7 +143,7 @@ module Authenticators
 end
 
 class RedirectToLogin < Liberty::Endpoint
-  def status = 303
+  def status = 302
 
   def headers = {"location" => "/login"}
 end
