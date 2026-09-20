@@ -17,7 +17,7 @@ jobs:
           - '4.0'
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         persist-credentials: false
 
@@ -27,8 +27,12 @@ jobs:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
 
-    - name: Build and test with RSpec
-      run: |
-        gem install bundler
-        bundle install --jobs 4 --retry 3
-        bundle exec rspec
+    - name: Install qlty
+      run: curl -fsSL https://qlty.sh | bash
+
+    # Every gate the Rakefile runs locally: spec, standard, qlty, flog.
+    # CI=true is what makes the spec helper demand 100% line and branch coverage.
+    - name: Run the gates
+      env:
+        CI: true
+      run: bundle exec rake
